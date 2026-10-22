@@ -83,15 +83,15 @@ Each figure is a single three-panel plot; one figure is produced per town (five 
 
 ## Reproducing the analysis
 
-The analysis script is the workshop exercise
-`python-workshop/exercises/04_cmorph_return_periods.py` (sibling checkout of
-[`icpac-igad/python-workshop`](https://github.com/icpac-igad/python-workshop)). It reads the towns
+The analysis script is included here as
+[`scripts/cmorph_return_periods.py`](scripts/cmorph_return_periods.py), adapted from exercise 04 of
+[`icpac-igad/python-workshop`](https://github.com/icpac-igad/python-workshop). It reads the towns
 from `grid.json`, loops over them, and writes one PNG per town into `out/`.
 
 From this repository directory, with the workshop environment available:
 
 ```bash
-uv run --project ../python-workshop python ../python-workshop/exercises/04_cmorph_return_periods.py
+uv run --project ../python-workshop python scripts/cmorph_return_periods.py
 ```
 
 The script accepts `--grid path/to/towns.json` to use a different town list. Results are written as
@@ -113,6 +113,6 @@ Dependencies: Python 3.12+, `icechunk`, `xarray`, `zarr`, `numpy` and `matplotli
 ```
 grid.json   Town coordinates and analysis metadata
 out/        Five generated figures, one per town
-scripts/    Supporting scripts
+scripts/    Analysis script (cmorph_return_periods.py) and supporting scripts
 README.md   This document
 ```
