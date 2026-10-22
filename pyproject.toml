@@ -1,0 +1,23 @@
+[project]
+name = "acmad-sudan-extremes"
+version = "0.1.0"
+description = "Observed rainfall thresholds for five Sudanese towns"
+requires-python = ">=3.12"
+dependencies = [
+    "icechunk>=2.2.2,<3",
+    "zarr>=3.2,<4",
+    "xarray>=2025.1",
+    "dask[array]",
+    "numpy",
+    "pandas",
+    "scipy",
+    "matplotlib",
+]
+
+[dependency-groups]
+dev = ["pytest"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
