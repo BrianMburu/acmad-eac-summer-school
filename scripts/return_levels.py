@@ -12,7 +12,8 @@ def gumbel_reduced_variate(return_period):
     values = np.asarray(return_period, dtype=float)
     if not values.size or not np.isfinite(values).all() or (values <= 1).any():
         raise ValueError("return period must be finite and greater than 1 year")
-    return -np.log(-np.log1p(-1.0 / return_period))
+    # The ufunc accepts lists/tuples and preserves xarray coordinate dispatch.
+    return -np.log(-np.log1p(-np.divide(1.0, return_period)))
 
 
 def gumbel_return_level(location, scale, return_period):

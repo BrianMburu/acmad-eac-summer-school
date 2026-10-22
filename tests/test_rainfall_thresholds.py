@@ -175,8 +175,16 @@ def test_offline_plotting_and_changed_config_guard(stores, tmp_path):
     np.savez_compressed(tmp_path / "regional_10yr_24hr.npz", latitude=regional.lat.values,
                         longitude=regional.lon.values, threshold_mm=regional.values)
     write_json(tmp_path / "manifest.json", {"config_sha256": config_hash(config)})
+    figures = tmp_path / "figures"
+    figures.mkdir()
+    unrelated = figures / "other_team_plot.png"
+    unrelated.write_bytes(b"Unrelated figure that must survive plotting")
+    previous = figures / "khartoum_return_levels.png"
+    previous.write_bytes(b"Previous version of this script's own figure")
     plot_outputs(config, tmp_path)
-    images = list((tmp_path / "figures").glob("*.png"))
+    assert unrelated.read_bytes() == b"Unrelated figure that must survive plotting"
+    assert previous.read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
+    images = [path for path in figures.glob("*.png") if path != unrelated]
     assert len(images) == 6
     assert all(p.stat().st_size > 1000 for p in images)
     changed = copy.deepcopy(config)
@@ -228,6 +236,39 @@ def test_remote_stages_with_synthetic_stores(stores, tmp_path, monkeypatch):
     assert not (results / "regional_10yr_24hr.npz").exists()
     manifest = json.loads((results / "manifest.json").read_text())
     assert manifest["extraction_sha256"] == extraction_hash(changed_map)
+
+
+@pytest.mark.parametrize("has_run_status", [True, False], ids=["current", "legacy"])
+@pytest.mark.parametrize("inspection_fails", [False, True], ids=["inspection_passes", "inspection_fails"])
+def test_inspection_preserves_completed_results(stores, tmp_path, monkeypatch,
+                                               has_run_status, inspection_fails):
+    config, obs, fc = stores
+    def fake_open(settings):
+        return (obs if settings["prefix"] == config["cmorph_reference"]["prefix"] else fc), settings["snapshot_id"]
+    monkeypatch.setattr(rainfall_thresholds, "open_store", fake_open)
+    rainfall_thresholds.run_remote(config, tmp_path)
+    status_path = tmp_path / "run_status.json"
+    if not has_run_status:
+        status_path.unlink()  # Completed runs from the original script had no marker.
+    previous_status = status_path.read_bytes() if status_path.exists() else None
+    manifest_bytes = (tmp_path / "manifest.json").read_bytes()
+    original_manifest = json.loads(manifest_bytes)
+
+    if inspection_fails:
+        obs = obs.sel(duration=["24hr"])
+        with pytest.raises(ValueError, match="Inspection failed"):
+            rainfall_thresholds.run_remote(config, tmp_path, inspection_only=True)
+    else:
+        rainfall_thresholds.run_remote(config, tmp_path, inspection_only=True)
+
+    assert (status_path.read_bytes() if status_path.exists() else None) == previous_status
+    assert (tmp_path / "manifest.json").read_bytes() == manifest_bytes
+    for filename, digest in original_manifest["output_sha256"].items():
+        assert file_sha256(tmp_path / filename) == digest
+    inspection = json.loads((tmp_path / "inspection_status.json").read_text())
+    assert inspection["status"] == ("failed" if inspection_fails else "ok")
+    rainfall_thresholds.require_complete_run(tmp_path)
+    verify_saved_settings(config, tmp_path)
 
 
 def test_failed_remote_inspection_exports_report_only(stores, tmp_path, monkeypatch):
