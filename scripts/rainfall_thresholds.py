@@ -50,8 +50,8 @@ def file_sha256(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def write_status(out, status, **extra):
-    write_json(out / "run_status.json",
+def write_status(out, status, *, filename="run_status.json", **extra):
+    write_json(out / filename,
                {"status": status, "updated_utc": datetime.now(UTC).isoformat(), **extra})
 
 
@@ -281,7 +281,9 @@ def run_remote(config, out, inspection_only=False):
     validate_common(config)
     validate_thresholds(config)
     out.mkdir(parents=True, exist_ok=True)
-    write_status(out, "running", stage="inspect")
+    # A metadata inspection has its own status and cannot invalidate an extraction.
+    status_file = "inspection_status.json" if inspection_only else "run_status.json"
+    write_status(out, "running", filename=status_file, stage="inspect")
     stage = "inspect"
     try:
         with ExitStack() as resources:
@@ -301,11 +303,11 @@ def run_remote(config, out, inspection_only=False):
                 raise ValueError("Inspection failed; review inspection.json and coverage.csv. "
                                  "No new thresholds were written.")
             if inspection_only:
-                write_status(out, "inspected", stage="inspect")
-                print("Inspection passed. Run the extract command next.")
+                write_status(out, "ok", filename=status_file, stage="inspect")
+                print("Inspection passed. Run extract to generate or refresh results.")
                 return
             stage = "extract"
-            write_status(out, "running", stage=stage)
+            write_status(out, "running", filename=status_file, stage=stage)
             # Stage every result, then promote it together. A failed run therefore
             # cannot leave new tables beside an old manifest or map.
             with tempfile.TemporaryDirectory(prefix=".extract-", dir=out) as tmp:
@@ -331,10 +333,10 @@ def run_remote(config, out, inspection_only=False):
                      "sensitivity_50yr.csv", map_name, "settings_used.json"]}
                 write_json(staging / "manifest.json", manifest)
                 promote_results(staging, out)
-            write_status(out, "ok", stage="complete")
+            write_status(out, "ok", filename=status_file, stage="complete")
             print(f"Extracted {len(thresholds)} thresholds and {len(maxima)} annual maxima to {out}")
     except Exception as exc:
-        write_status(out, "failed", stage=stage, error=str(exc))
+        write_status(out, "failed", filename=status_file, stage=stage, error=str(exc))
         raise
 
 
@@ -378,11 +380,8 @@ def plot_outputs(config, out):
     thresholds = pd.read_csv(out / "thresholds.csv")
     maxima = pd.read_csv(out / "annual_maxima.csv")
     figures = out / "figures"
-    if figures.exists():
-        for old in figures.glob("*.png"):
-            old.unlink()
-    else:
-        figures.mkdir()
+    # savefig replaces each named output; unrelated files are left untouched.
+    figures.mkdir(exist_ok=True)
     for town in config["towns"]:
         fig, axes = plt.subplots(2, 2, figsize=(13, 9), squeeze=False)
         for row, duration in enumerate(config["thresholds"]["durations"]):
