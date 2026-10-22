@@ -140,4 +140,5 @@ def daily_rainfall(cumulative, factor, trace_rainfall_mm=0.04):
                    "tiny_negative_totals_clipped": clipped, "positive_trace_totals_zeroed": positive_traces,
                    "minimum_uncorrected_daily_mm": minimum, "trace_rainfall_mm": trace_rainfall_mm,
                    "initialization": init.isoformat()}
-    return daily.transpose("town", "number", "time")
+    # Retain paired towns or regional latitude/longitude axes before members/time.
+    return daily.transpose(..., "number", "time")

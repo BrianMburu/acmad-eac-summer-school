@@ -2,8 +2,8 @@
 
 ACMAD group project: define extreme rainfall at Khartoum, Kassala, Gedaref,
 El Obeid and Nyala using CMORPH annual maxima from 1998–2024 (Part A), then
-compare warning thresholds (Part B) and forecast lead times (Part C) using
-June–August 2025 ECMWF forecasts.
+compare warning thresholds (Part B), forecast lead times (Part C) and regional
+risk (Part D) using June–August 2025 ECMWF forecasts.
 
 See the [observed rainfall threshold task and results](RAINFALL_THRESHOLDS.md) for the assignment,
 acceptance criteria, completed local run and handoff to the other teams.
@@ -66,6 +66,7 @@ packages and performs no network access.
 | `COMPARISON` | Planned forecast comparison: local 2-year 24-hour level, strict `>` |
 | `THRESHOLD_CHOICE` | Part B: all five towns, fixed 20 mm threshold, trace correction, unit fallback, output folder and read budget |
 | `LEAD_TIME` | Part C: 14-day start windows, 20% signal criterion, shared point cache, output folder and source-read budget |
+| `RISK_MAP` | Part D: extra start selected from C, daily leads, 20% probability criterion, output folder and source-read budget |
 
 Inspect the effective settings or refresh the JSON export after editing:
 
@@ -364,6 +365,73 @@ chunks, about **7,530 MiB decoded**; actual compressed transfer was not measured
 Across all 42 starts, 394 negative and 4,268 positive packing traces were
 corrected with the shared 0.04 mm tolerance; the most negative raw daily
 increment was −0.03052 mm.
+
+## Regional risk maps (Part D)
+
+The regional analysis in `scripts/regional_risk.py` adapts workshop **E8**
+(local threshold probability maps) and **E3** (pan chunks and timed reads).
+It uses the shared region and all five towns. The four initializations are
+**16 June, 16 July, 13 August and 16 August 2025**: the three shared monthly
+starts plus Part C's strongest start. Each uses forecast days 1–10, selecting
+only daily cumulative endpoints before computation.
+
+```sh
+uv run python -m scripts.regional_risk inspect
+uv run python -m scripts.regional_risk extract
+uv run python -m scripts.regional_risk plots
+```
+
+Settings live in `RISK_MAP` in `scripts/common.py`; refresh `grid.json` after
+editing. The extra start is explicit so a fresh clone can reproduce the selection
+without first rerunning C. `--out PATH` selects another output folder, and
+`--config PATH.json` loads saved settings or an explicit execution override.
+`inspect` checks both stores' domains, coordinate order, units, dates and source
+chunk costs without fetching remote rainfall. Extraction enforces the uncached
+read budget and processes one start at a time with checksum-verified regional
+caches. The Part B/C point caches contain insufficient spatial data for maps.
+
+Every forecast pixel gets the nearest CMORPH **2-year, 24-hour** threshold from
+the same pinned snapshot as A; A's **10-year** reference map is not used. Daily
+rainfall conversion and packing-trace treatment are shared with B/C. A pixel's
+probability is the number of 51 members with rainfall strictly **above** its
+threshold, divided by 51. Missing thresholds stay masked. An entirely unwritten
+forecast is skipped; partial missing forecasts and material cumulative decreases
+stop extraction.
+
+The frequency numerator counts available **initialization/forecast-day** pairs
+with probability **≥20%** (at least 11 members). The denominator counts available
+pairs at that pixel; missing starts, days outside June–August, and missing
+thresholds contribute neither hits nor opportunities. The result describes
+the selected forecasts across the season, not a complete seasonal climatology,
+observed event frequency, or independent events. Overlapping initializations
+can describe the same valid day more than once.
+
+Town markers use the same five coordinates as C. The nearest forecast pixel can
+have a different CMORPH neighbour from the town centre: C matches thresholds
+directly to town centres, whereas D matches them to forecast pixels. The town
+tables export requested, forecast and CMORPH coordinates and the thresholds so
+this difference is visible.
+
+Outputs under `out/regional_risk/` are ignored by Git:
+
+| Output | Purpose |
+|---|---|
+| `risk_maps.nc` | Daily member counts and probabilities, local thresholds, frequency hits and available-pair denominators |
+| `spatial_summary.csv` | Peak probability and location, and number of pixels reaching 20%, for each start/day |
+| `town_probabilities.csv`, `town_risk_summary.csv` | Town-cell daily values and sampled frequency with matching coordinates |
+| `frequency.csv` | Every regional pixel's hits, denominator and frequency |
+| `read_timings.csv` | Threshold and per-start read durations, distinguishing cache reads |
+| `figures/probability_<date>.png` | Four figures, each showing ten daily probability maps with the same 0–100% scale |
+| `figures/sampled_risk_frequency.png` | One frequency map with the five towns marked |
+| `manifest.json`, `settings_used.json`, `forecast_starts.json` | Provenance, settings, checksums and availability |
+
+The E3 explanation is about marginal spatial cost: each forecast source chunk
+holds all 51 members over the full map at one start/lead. Mapping the region
+therefore touches the same source chunks as selecting town points for those
+dates and leads. Daily endpoints use 11 chunks per start instead of all 65
+subdaily leads. The CMORPH threshold field is also pan-chunked. Inspection
+reports decoded source volume separately from the much smaller regional result;
+compressed transfer and peak RAM cannot be inferred from those estimates.
 
 ## Supplementary 27-year return-period figures
 

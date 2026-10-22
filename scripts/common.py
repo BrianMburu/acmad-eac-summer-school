@@ -77,6 +77,13 @@ LEAD_TIME = {"days_before": 7, "days_after": 6, "signal_probability": 0.20,
              "cache_directory": "out/threshold_choice/cache",
              "output_directory": "out/forecast_lead_time", "max_source_mib": 8192}
 
+# Part D retains the three shared monthly starts and adds Part C's strongest
+# start (Kassala, 13 August). Frequency counts sampled start/day opportunities.
+RISK_MAP = {"additional_start_dates": ["2025-08-13"],
+            "forecast_days": list(range(1, 11)),
+            "signal_probability": LEAD_TIME["signal_probability"],
+            "output_directory": "out/regional_risk", "max_source_mib": 1024}
+
 
 def default_config():
     """Build a fresh dictionary; callers cannot mutate the module's defaults."""
@@ -99,6 +106,7 @@ def default_config():
             "comparison": deepcopy(COMPARISON),
             "threshold_choice": deepcopy(THRESHOLD_CHOICE),
             "lead_time": deepcopy(LEAD_TIME),
+            "risk_map": deepcopy(RISK_MAP),
             "execution": {"workers": WORKERS, "output_directory": OUTPUT_DIRECTORY}}
 
 
@@ -197,7 +205,7 @@ def validate_common(config, require_forecast_dates=False):
     """Validate shared settings without imposing the threshold task's requirements."""
     _object(config, "config", ("schema_version", "country", "country_code", "coordinate_reference_system",
             "coordinate_source", "region_extent", "towns", "start_date", "end_date", "forecast",
-            "cmorph_reference", "comparison", "execution"), optional=("thresholds", "threshold_choice", "lead_time"))
+            "cmorph_reference", "comparison", "execution"), optional=("thresholds", "threshold_choice", "lead_time", "risk_map"))
     if type(config["schema_version"]) is not int or config["schema_version"] != 2:
         raise ConfigError("schema_version: expected 2")
     for key in ("country", "country_code", "coordinate_source"):
@@ -345,6 +353,39 @@ def validate_lead_time(config):
         raise ConfigError("lead_time: start windows overlap; select separated forecast anchors")
     if min(dates) < config["start_date"] or max(dates) > config["end_date"]:
         raise ConfigError("lead_time: expanded starts must lie within start_date/end_date")
+
+
+def risk_map_dates(config):
+    """Part D's shared starts plus the explicit extra start selected from C."""
+    return sorted(config["forecast"]["start_dates"] + config["risk_map"]["additional_start_dates"])
+
+
+def validate_risk_map(config):
+    validate_threshold_choice(config)  # shared cumulative units and packing tolerance
+    validate_thresholds(config)
+    settings = config.get("risk_map")
+    _object(settings, "risk_map", ("additional_start_dates", "forecast_days",
+            "signal_probability", "output_directory", "max_source_mib"))
+    extra = settings["additional_start_dates"]
+    if not isinstance(extra, list):
+        raise ConfigError("risk_map.additional_start_dates: expected a list of ISO dates")
+    for i, value in enumerate(extra):
+        _date(value, f"risk_map.additional_start_dates[{i}]")
+    dates = risk_map_dates(config)
+    if len(set(dates)) != len(dates) or not 3 <= len(dates) <= 4:
+        raise ConfigError("risk_map.additional_start_dates: shared and extra starts must total 3–4 unique dates")
+    if not all(config["start_date"] <= day <= config["end_date"] for day in dates):
+        raise ConfigError("risk_map.additional_start_dates: starts must lie within start_date/end_date")
+    days = settings["forecast_days"]
+    if (not isinstance(days, list) or not 1 <= len(days) <= 10
+            or any(type(day) is not int for day in days)
+            or days != list(range(1, len(days) + 1))):
+        raise ConfigError("risk_map.forecast_days: require consecutive forecast days starting at 1, up to 10")
+    _number(settings["signal_probability"], "risk_map.signal_probability", .0001, 1)
+    _number(settings["max_source_mib"], "risk_map.max_source_mib", 1, 100000)
+    _text(settings["output_directory"], "risk_map.output_directory")
+    if config["comparison"]["duration"] != "24hr" or config["comparison"]["return_period_years"] != 2:
+        raise ConfigError("comparison: Part D requires the 2-year 24hr level")
 
 
 def migrate_legacy(config):
