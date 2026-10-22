@@ -45,4 +45,6 @@ The revised Task B is saved as `task_B`. Its `analyze.py` recomputes daily
 rainfall, three-threshold counts and xclim heavy days from retained cumulative
 forecasts, and calls its committed `plot_results.py` to generate both town
 figures and `two_town_threshold_comparison.png`. Current analysis/renderer and
-input hashes plus Git revision are recorded with its final outputs.
+input hashes plus Git revision are recorded with its final outputs. Task B now
+uses all five towns from grid.json; its combined figure is
+`task_B/five_town_threshold_comparison.png` (five rows, three thresholds).

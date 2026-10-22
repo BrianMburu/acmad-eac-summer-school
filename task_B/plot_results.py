@@ -53,17 +53,18 @@ def render(root=ROOT):
         fig.savefig(root / f'{town.lower().replace(" ", "_")}_threshold_counts.png', dpi=180)
         plt.close(fig)
 
-    fig, axes = plt.subplots(3, len(towns), figsize=(7*len(towns), 9), squeeze=False,
+    fig, axes = plt.subplots(len(towns), 3, figsize=(17, 3.2*len(towns)), squeeze=False,
                              sharex=True, sharey=True, layout='constrained')
-    for col, town in enumerate(towns):
-        for row, (threshold, label, color) in enumerate(thresholds):
+    for row, town in enumerate(towns):
+        for col, (threshold, label, color) in enumerate(thresholds):
             panel(axes[row, col], town, threshold, label, color)
-            if row == 0:
+            if col == 0:
                 axes[row, col].set_title(town+'\n'+axes[row, col].get_title(), fontsize=13)
-        axes[-1, col].set_xlabel('Forecast day (24-hour intervals)')
+    for ax in axes[-1]:
+        ax.set_xlabel('Forecast day (24-hour intervals)')
     fig.suptitle(f'Which threshold is exceeded? | Forecast initialized {initialization}\n'
                  f'Counts out of {members} members • rainfall thresholds in mm in 24 h • strict >', fontsize=15)
-    target = root / 'two_town_threshold_comparison.png'
+    target = root / 'five_town_threshold_comparison.png'
     fig.savefig(target, dpi=180)
     plt.close(fig)
     revision = subprocess.run(['git', '-C', str(root), 'rev-parse', 'HEAD'], capture_output=True, text=True)

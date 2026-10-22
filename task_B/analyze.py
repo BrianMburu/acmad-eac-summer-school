@@ -27,22 +27,25 @@ def main():
     source = json.loads((inputs/'source_run_metadata.json').read_text())
     thresholds = pd.read_csv(inputs/'thresholds.csv')
     annual = pd.read_csv(inputs/'annual_maxima.csv')
-    with np.load(inputs/'forecast_point_diagnostics.npz', allow_pickle=False) as cache:
+    towns = [town['name'] for town in config['towns']]
+    init = pd.Timestamp('2025-07-16')
+    with np.load(inputs/f'{init:%Y-%m-%d}.npz', allow_pickle=False) as cache:
         cumulative = cache['cumulative_m']
         hours, members = cache['lead_hours'], cache['members']
-        towns = cache['towns'].tolist()
-        init = pd.Timestamp(str(cache['initialization']))
         domains = json.loads(str(cache['domains_json']))
-    if towns != ['Khartoum', 'Kassala'] or cumulative.shape != (2, 51, 11):
-        raise ValueError('Expected Khartoum and Kassala, 51 members and 11 cumulative endpoints')
+        expected = hashlib.sha256(json.dumps(dict(towns=config['towns'], forecast=config['forecast']), sort_keys=True).encode()).hexdigest()
+        if str(cache['fingerprint']) != expected:
+            raise ValueError('Cached forecast source or town coordinates differ from grid.json')
+    if len(towns) != 5 or len(set(towns)) != 5 or cumulative.shape != (len(towns), 51, 11):
+        raise ValueError('Expected five distinct grid.json towns, 51 members and 11 cumulative endpoints')
     if len(np.unique(members)) != 51 or not np.array_equal(hours, np.arange(11)*24):
         raise ValueError('Expected unique member IDs and steps 0,24,...,240 hours')
     if not np.isfinite(cumulative).all():
         raise ValueError('Missing forecast data')
-    if str(init) != source['initialization'] or towns != [t['name'] for t in source['towns']]:
-        raise ValueError('Cache does not match recorded source run')
-    if source['forecast'] != config['forecast'] or source['cumulative_precipitation_units'] != 'm':
-        raise ValueError('Source or cumulative-rainfall units differ from documented extraction')
+    if not pd.Timestamp(source['start']) <= init <= pd.Timestamp(source['end']):
+        raise ValueError('Initialization is outside the recorded Task C extraction window')
+    if config['forecast']['prefix'] != 'forecasts/ecmwf-ifs-ea-swio-realized-v3/49r1-jja2025':
+        raise ValueError('Cumulative-metre convention is only documented for the workshop forecast store')
     if domains.get('status') != 'verified':
         raise ValueError('Require verified source-domain evidence in saved extraction')
     lookup = {t['name']: t for t in config['towns']}
@@ -134,7 +137,7 @@ def main():
 
     # %% Numerical report and provenance from this committed script
     report = ['# Task B: Which threshold should trigger a warning?', '',
-        f'Forecast initialization: **{init:%Y-%m-%d}**. Two towns, **51 members**, **10 daily intervals**.',
+        f'Forecast initialization: **{init:%Y-%m-%d}**. All **{len(towns)} grid.json towns**, **51 members**, **10 daily intervals**.',
         f'Day 1: {init:%d %b}–{dates[0]:%d %b}; day 10: {dates[-1]-pd.Timedelta(days=1):%d %b}–{dates[-1]:%d %b %Y}.', '',
         '## Units and thresholds', '',
         'Rainfall is a depth in **mm accumulated in 24 h**. For a full 24-hour interval this is numerically equivalent to mm/day.',
@@ -151,24 +154,30 @@ def main():
         for label in ['20mm','2yr','10yr']:
             subset=counts[(counts.town==name)&(counts.threshold==label)].sort_values('forecast_day')
             report.append(f'| {name} | {label} | '+' | '.join(map(str,subset.members_above))+' |')
-    report += ['', 'Khartoum has no exceedances at any threshold. Kassala exceeds 20 mm with two members on day 1, two on day 6 and one on day 9. Neither town exceeds the 2-year or 10-year levels.', '',
+    report += ['', 'Each row above reports exact counts out of 51 members; zero means no member exceeds that threshold on that forecast day.', '',
         '## Xclim heavy-rain-day counts', '',
         '`xclim.indices.wetdays` counts days **>=** the threshold for each member during the ten-day forecast window. The daily comparison plots count **>**; equality is deliberately distinguished.',
-        'All 306 xclim counts (2 towns × 3 thresholds × 51 members) were checked against a direct count.', '',
+        f'All {len(towns)*3*51} xclim counts ({len(towns)} towns × 3 thresholds × 51 members) were checked against a direct count.', '',
         '| Town | Threshold | Members with >=1 heavy day | Mean heavy days/member |', '|---|---|---:|---:|']
     for row in summary.itertuples():
         report.append(f'| {row.town} | {row.threshold} | {row.members_with_heavy_day_ge}/51 | {row.mean_heavy_days_ge:.3f} |')
-    report += ['', 'Kassala has five distinct members with one day >=20 mm each. Its mean is 5/51 = 0.098 heavy days/member over this window. These are not annual heavy-day totals.', '',
+    report += ['', 'Heavy-day means describe the ten-day forecast window, not annual totals. Members with at least one heavy day are counted once, even if they have several heavy days.', '',
         '## Extension: is an annual 2-year level fair for one daily warning?', '',
         'It is useful for screening unusually large rain, but cannot alone determine an operational daily warning. A fitted 2-year annual level has a 50% chance of at least one exceedance in a year, not a 50% chance each day.']
     for row in observation_rows:
         report.append(f'- {row["town"]}: {row["observed_annual_exceedances"]}/27 observed annual maxima exceed {row["threshold_2yr_mm"]:.2f} mm ({row["observed_annual_exceedances"]/27:.1%}).')
+    report += ['', 'In this forecast, threshold sensitivity differs by town:']
+    for name in towns:
+        local = summary[summary.town == name].set_index('threshold')
+        report.append(f'- {name}: fixed 20 mm gives **{int(local.loc["20mm", "member_days_above"])}/510** member-day exceedances '
+            f'({local.loc["20mm", "fraction_above"]:.2%}); 2-year gives **{int(local.loc["2yr", "member_days_above"])}/510** '
+            f'({local.loc["2yr", "fraction_above"]:.2%}); 10-year gives **{int(local.loc["10yr", "member_days_above"])}/510** '
+            f'({local.loc["10yr", "fraction_above"]:.2%}).')
     report += [f'- Under an illustrative model with independent, identical days, daily p = 1 − 0.5^(1/365) = **{1-.5**(1/365):.3%}**. Rainfall is seasonal and dependent, so this is not a calibrated local daily probability.',
-        '- This forecast has **0/510 member-days** above the 2-year threshold at either town; Kassala has **5/510 = 0.98%** above 20 mm.',
         '- These numbers show different sensitivity; ensemble member-days are correlated predictions and do not estimate observed climatological frequency.',
         '- Choosing a warning needs impact records, forecast verification, false-alarm/miss tradeoffs and an explicit probability decision rule.', '',
         '## Checks and limitations', '',
-        '- Both towns lie inside the recorded forecast and CMORPH source domains. Forecast latitude descends; CMORPH latitude ascends.',
+        '- All five towns lie inside the recorded forecast and CMORPH source domains. Forecast latitude descends; CMORPH latitude ascends.',
         '- Source-domain evidence was verified in the earlier connected extraction and retained in the cache. This final run validates that evidence without a fresh cloud query.',
         '- Task A coordinates and selected CMORPH pixels match that source-domain evidence.',
         '- All 51 members are finite at every cumulative endpoint; intervals are consecutive 24-hour periods.',
@@ -183,17 +192,18 @@ def main():
         plot_script_sha256=hashlib.sha256((ROOT/'plot_results.py').read_bytes()).hexdigest(),
         grid_sha256=hashlib.sha256((ROOT/'grid.json').read_bytes()).hexdigest(),
         git_commit=revision.stdout.strip() if revision.returncode==0 else None,
-        input_hashes={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in inputs.iterdir() if p.is_file()},
+        input_hashes={name:hashlib.sha256((inputs/name).read_bytes()).hexdigest() for name in
+            [f'{init:%Y-%m-%d}.npz','source_run_metadata.json','thresholds.csv','annual_maxima.csv']},
         domain_validation=domains, fresh_cloud_domain_check=False, domain_evidence='recorded verified extraction metadata',
         forecast=config['forecast'], threshold_source='published CMORPH levels from completed task_A',
         rainfall_units='mm in 24 h', source_cumulative_units='m', count_units='members',
         daily_operator='>', xclim_operator='>=', negative_totals_clipped=negative_count,
         minimum_raw_daily_mm=minimum_raw, negative_tolerance_mm=.05,
-        checked_daily_counts=60, checked_xclim_member_counts=306,
+        towns=towns, checked_daily_counts=len(counts), checked_xclim_member_counts=len(heavy_rows),
         versions=dict(numpy=np.__version__,pandas=pd.__version__,xarray=xr.__version__,xclim=xclim.__version__))
     (ROOT/'run_metadata.json').write_text(json.dumps(metadata,indent=2)+'\n')
     print(summary.to_string(index=False),flush=True)
-    print('All 60 daily counts and 306 xclim counts validated.',flush=True)
+    print(f'All {len(counts)} daily counts and {len(heavy_rows)} xclim counts validated.',flush=True)
     print(f'Task B complete. Figures, tables and results.md saved in {ROOT}',flush=True)
 
 

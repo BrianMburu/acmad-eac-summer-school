@@ -1,6 +1,7 @@
 # task_B: Which threshold should trigger a warning?
 
-Final Task B for **Khartoum and Kassala**, using the **16 July 2025** ensemble
+Final Task B for **all five towns in grid.json** (Khartoum, Kassala, Gedaref,
+El Obeid and Nyala), using the **16 July 2025** ensemble
 initialization and ten daily forecast intervals. References are workshop
 `05_xclim_heavy_rain.py` and `06_forecast_vs_local_extremes.py`.
 
@@ -18,7 +19,8 @@ From the repository, using the existing environment:
 ```
 
 No cloud access or new data download is needed. All retained inputs are under
-`inputs/`: cumulative forecast cache, original source-run metadata and the
+`inputs/`: Task C's five-town `2025-07-16.npz` cumulative forecast cache,
+Task C's recorded run metadata (`source_run_metadata.json`) and the
 completed Task A thresholds and annual maxima. Dependencies are listed in
 `requirements.txt`; xclim is already installed in the shared environment.
 
@@ -26,15 +28,16 @@ completed Task A thresholds and annual maxima. Dependencies are listed in
 
 - **`results.md`**: threshold table, exact daily counts, xclim summary, units,
   domain checks and quantitative annual-versus-daily discussion.
-- **`two_town_threshold_comparison.png`**: combined comparison, separate panels
+- **`five_town_threshold_comparison.png`**: combined comparison, five town rows
+  and three threshold columns, with separate panels
   for each threshold, exact count labels including zero counts.
-- `khartoum_threshold_counts.png`, `kassala_threshold_counts.png`: town figures.
+- Five `*_threshold_counts.png` town figures.
 - **`daily_counts_short.csv`**: one row per town/day with all three counts.
 - `daily_member_counts.csv`: full counts, interval dates, thresholds and fractions.
 - `summary_counts.csv`: aggregate counts and xclim summaries.
-- **`xclim_heavy_days.csv`**: 306 member-level heavy-day counts.
-- `thresholds_used.csv`: six exact thresholds, with units.
-- `daily_rainfall.csv`: 1,020 daily member values.
+- **`xclim_heavy_days.csv`**: 765 member-level heavy-day counts.
+- `thresholds_used.csv`: 15 exact thresholds, with units.
+- `daily_rainfall.csv`: 2,550 daily member values.
 - `annual_vs_daily_comparison.csv`: observed annual exceedance evidence from A.
 - `run_metadata.json`, `figure_provenance.json`: current script/renderer hashes,
   input hashes, Git revision and recorded verification evidence.
@@ -47,11 +50,11 @@ Daily exceedances use strict `>`; xclim wetdays uses `>=`. Xclim counts describe
 this ten-day forecast window, not a full year. The default layout enlarges the
 count scale so small signals and zero series are visible in separate panels.
 
-The retained connected extraction verified both town domains, descending
+The retained connected Task C extraction verified all five town domains, descending
 forecast latitude and ascending CMORPH latitude. This offline run rechecks
-the stored evidence and matching Task A pixels; it does not claim a new cloud
-verification. The 13 tiny negative increments are clipped to zero with a
-0.05 mm tolerance, recorded in the report and metadata. Larger decreases fail.
+the stored evidence, source/town fingerprint and matching Task A pixels; it does not claim a new cloud
+verification. Tiny negative increments are clipped to zero with a
+0.05 mm tolerance; their actual count is recorded in the report and metadata. Larger decreases fail.
 
 A 2-year annual level implies about 50% annual exceedance probability, not
 50% per day. The numerical comparison in `results.md` explains the distinction
