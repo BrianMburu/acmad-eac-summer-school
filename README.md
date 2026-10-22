@@ -197,7 +197,7 @@ consecutive 24-hour endpoints. If lead zero is absent, the 24-hour accumulation
 is the first day's total. Contradictory units, partial missing data, nonzero
 initial accumulation and material decreases stop the run. ECMWF documents tiny
 positive and negative increments caused by GRIB packing; values below
-`THRESHOLD_CHOICE["trace_rainfall_mm"]` (0.04 mm initially) are set to zero,
+`THRESHOLD_CHOICE["trace_rainfall_mm"]` (currently 0.08 mm; initially 0.04 mm) are set to zero,
 and decreases beyond that tolerance still fail. The raw minimum and numbers of
 corrected traces are recorded per start. This treatment follows the
 [ECMWF packing guidance](https://confluence.ecmwf.int/spaces/UDOC/pages/208501579/Why+are+there+sometimes+small+negative+precipitation+accumulations+-+ecCodes+GRIB+FAQ)
@@ -397,6 +397,15 @@ probability is the number of 51 members with rainfall strictly **above** its
 threshold, divided by 51. Missing thresholds stay masked. An entirely unwritten
 forecast is skipped; partial missing forecasts and material cumulative decreases
 stop extraction.
+
+The regional run found two daily increments of −0.04578 mm in the 16 August
+forecast, consistent with GRIB packing artifacts. The shared cleanup tolerance
+is now **0.08 mm**, one of the values in
+[ECMWF's ten-day packing guidance](https://confluence.ecmwf.int/spaces/UDOC/pages/208501579/Why+are+there+sometimes+small+negative+precipitation+accumulations+-+ecCodes+GRIB+FAQ).
+This covers those traces while still rejecting larger decreases. The smallest
+mapped 2-year level is 7.65 mm, so zeroing these tiny increments cannot change
+any of the warning exceedance counts. Earlier B/C runs retain their recorded
+0.04 mm settings; the rainfall warning thresholds are unchanged.
 
 The frequency numerator counts available **initialization/forecast-day** pairs
 with probability **≥20%** (at least 11 members). The denominator counts available

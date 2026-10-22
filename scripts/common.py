@@ -68,7 +68,7 @@ OUTPUT_DIRECTORY = "out/rainfall_thresholds"
 # Part B compares all configured towns for the selected forecast start above.
 THRESHOLD_CHOICE = {"towns": [town["name"] for town in TOWNS], "fixed_threshold_mm": 20.0,
                     "forecast_units_if_missing": "m",  # cumulative tp, workshop E5/E6
-                    "trace_rainfall_mm": 0.04,  # ECMWF guidance for 10-day GRIB packing noise
+                    "trace_rainfall_mm": 0.08,  # ECMWF 10-day packing guidance; regional traces reach 0.04578 mm
                     "output_directory": "out/threshold_choice", "max_source_mib": 1024}
 
 # Part C expands each shared start (the 16th) to 14 consecutive daily starts.

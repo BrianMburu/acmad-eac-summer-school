@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from scripts.common import box_inside, inside
+from scripts.common import THRESHOLD_CHOICE, box_inside, inside
 from scripts.data_access import domain
 
 
@@ -104,12 +104,14 @@ def source_read_estimate(array, time_indices, step_indices, selected):
             "selected_point_mib": math.prod(selected.shape) * array.dtype.itemsize / 2**20}
 
 
-def daily_rainfall(cumulative, factor, trace_rainfall_mm=0.04):
+def daily_rainfall(cumulative, factor, trace_rainfall_mm=None):
     """Convert one computed start to finite 24-hour depths with valid end times.
 
     An entirely unwritten start returns None. Partial missingness and materially
     decreasing accumulations fail, rather than being counted as dry members.
     """
+    if trace_rainfall_mm is None:
+        trace_rainfall_mm = THRESHOLD_CHOICE['trace_rainfall_mm']
     values = np.asarray(cumulative.values)
     if np.isnan(values).all():
         return None

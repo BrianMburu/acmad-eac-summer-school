@@ -129,7 +129,7 @@
     ],
     "fixed_threshold_mm": 20.0,
     "forecast_units_if_missing": "m",
-    "trace_rainfall_mm": 0.04,
+    "trace_rainfall_mm": 0.08,
     "output_directory": "out/threshold_choice",
     "max_source_mib": 1024
   },

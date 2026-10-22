@@ -9,6 +9,7 @@ import xarray as xr
 
 from scripts import regional_risk as risk
 from scripts.common import ConfigError, load_config, risk_map_dates, validate_risk_map
+from scripts.forecast_rainfall import daily_rainfall
 
 
 @pytest.fixture
@@ -98,6 +99,23 @@ def test_probability_is_strict_and_missing_thresholds_are_masked():
     assert np.isnan(result.probability.sel(latitude=14., longitude=31.)).all()
     with pytest.raises(ValueError, match='coordinates differ'):
         risk.probability_for_start(daily, threshold.assign_coords(longitude=[30., 32.]), '2025-08-13')
+
+
+def test_shared_packing_tolerance_handles_observed_regional_trace_and_rejects_larger_decrease():
+    raw = xr.DataArray(np.array([0., .0009002685546875, .0008544921875]).reshape(3, 1, 1, 1),
+        dims=('step', 'number', 'latitude', 'longitude'),
+        coords={'step': np.array([0, 24, 48], dtype='timedelta64[h]'), 'number': [24],
+                'latitude': [16.25], 'longitude': [29.25], 'time': pd.Timestamp('2025-08-16')})
+    with pytest.raises(ValueError, match='decreases'):
+        daily_rainfall(raw, 1000, trace_rainfall_mm=.04)
+    daily = daily_rainfall(raw, 1000)
+    assert daily.attrs['trace_rainfall_mm'] == load_config()['threshold_choice']['trace_rainfall_mm'] == .08
+    assert daily.attrs['minimum_uncorrected_daily_mm'] == pytest.approx(-.0457763671875)
+    assert daily.attrs['tiny_negative_totals_clipped'] == 1
+    assert daily.sel(time='2025-08-18').item() == 0
+    raw.values[2] = raw.values[1] - .00009
+    with pytest.raises(ValueError, match='decreases'):
+        daily_rainfall(raw, 1000)
 
 
 def test_full_run_uses_available_denominator_caches_and_plots_offline(inputs, tmp_path, monkeypatch):
