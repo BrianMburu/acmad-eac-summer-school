@@ -184,6 +184,42 @@ all other files under `out/` remain ignored. See
 [`CMORPH_RETURN_PERIODS.md`](CMORPH_RETURN_PERIODS.md) for the data, method, full
 return-level table, figure links and caveats.
 
+## Forecast threshold counts
+
+[`scripts/forecast_threshold_counts.py`](scripts/forecast_threshold_counts.py)
+applies workshop exercises E5 and E6 to every town in the settings. It uses the
+2025-07-16 forecast initialization (time index 45; override with `--init`),
+differences the cumulative forecast `tp` at whole-day leads to obtain ten
+24-hour totals, and converts metres to millimetres. For each town it counts
+ensemble members above:
+
+- a fixed 20 mm/day threshold,
+- the town's nearest-pixel CMORPH 24-hour 2-year level, and
+- the town's nearest-pixel CMORPH 24-hour 10-year level.
+
+The comparison is strict `>` (as in E6). An xclim `wetdays` count with
+`op=">"` is also computed for each threshold. Run it with the exported JSON
+settings or the Python defaults:
+
+```sh
+uv run python -m scripts.forecast_threshold_counts --config grid.json
+```
+
+`--fixed-threshold-mm`, `--init YYYY-MM-DD` and `--out PATH` are optional. The
+run writes an ignored summary and figures under `out/forecast_thresholds/`:
+
+| Output | Purpose |
+|---|---|
+| `07_forecast_threshold_counts.csv` | Town × threshold counts, including xclim heavy-day summaries |
+| `07_forecast_threshold_members_<town>.png` | One three-panel figure per town |
+| `07_forecast_threshold_members.png` | Combined town × threshold overview |
+
+The CSV reports unique members above at least once, the maximum number of
+members above in one forecast day, total member-days above, days with any
+member above, and the xclim total, member count and maximum days per member.
+CMORPH levels and both store snapshot IDs are read through the shared settings;
+coverage, coordinate order and depth units are checked before selection.
+
 ## Limits and workshop sources
 
 These are annual-extreme thresholds from 1998–2024, not seasonal thresholds or
