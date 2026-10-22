@@ -50,7 +50,7 @@ def select_town_forecasts(ds, config):
     if set(array.dims) != expected:
         raise ValueError(f"Unexpected forecast dimensions: {array.dims}")
     if ds.sizes["number"] != 51 or len(np.unique(ds.number.values)) != 51:
-        raise ValueError("Part B requires the complete 51-member ensemble")
+        raise ValueError("Forecast analysis requires the complete 51-member ensemble")
     extent = domain(ds, "latitude", "longitude", settings["latitude_order"] == "ascending")
     if not box_inside(extent, config["region_extent"]):
         raise ValueError("Study region is outside the forecast domain")

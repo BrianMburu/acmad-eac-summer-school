@@ -10,7 +10,7 @@ import json
 import math
 import re
 from copy import deepcopy
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -71,6 +71,12 @@ THRESHOLD_CHOICE = {"towns": [town["name"] for town in TOWNS], "fixed_threshold_
                     "trace_rainfall_mm": 0.04,  # ECMWF guidance for 10-day GRIB packing noise
                     "output_directory": "out/threshold_choice", "max_source_mib": 1024}
 
+# Part C expands each shared start (the 16th) to 14 consecutive daily starts.
+# Rainfall units and trace handling stay shared with the tested Part B reader.
+LEAD_TIME = {"days_before": 7, "days_after": 6, "signal_probability": 0.20,
+             "cache_directory": "out/threshold_choice/cache",
+             "output_directory": "out/forecast_lead_time", "max_source_mib": 8192}
+
 
 def default_config():
     """Build a fresh dictionary; callers cannot mutate the module's defaults."""
@@ -92,6 +98,7 @@ def default_config():
                            "units_if_missing": UNITS_IF_MISSING},
             "comparison": deepcopy(COMPARISON),
             "threshold_choice": deepcopy(THRESHOLD_CHOICE),
+            "lead_time": deepcopy(LEAD_TIME),
             "execution": {"workers": WORKERS, "output_directory": OUTPUT_DIRECTORY}}
 
 
@@ -190,7 +197,7 @@ def validate_common(config, require_forecast_dates=False):
     """Validate shared settings without imposing the threshold task's requirements."""
     _object(config, "config", ("schema_version", "country", "country_code", "coordinate_reference_system",
             "coordinate_source", "region_extent", "towns", "start_date", "end_date", "forecast",
-            "cmorph_reference", "comparison", "execution"), optional=("thresholds", "threshold_choice"))
+            "cmorph_reference", "comparison", "execution"), optional=("thresholds", "threshold_choice", "lead_time"))
     if type(config["schema_version"]) is not int or config["schema_version"] != 2:
         raise ConfigError("schema_version: expected 2")
     for key in ("country", "country_code", "coordinate_source"):
@@ -303,6 +310,41 @@ def validate_threshold_choice(config):
     _text(settings["output_directory"], "threshold_choice.output_directory")
     _number(settings["trace_rainfall_mm"], "threshold_choice.trace_rainfall_mm", 0, 0.1)
     _number(settings["max_source_mib"], "threshold_choice.max_source_mib", 1, 100000)
+
+
+def lead_time_windows(config):
+    """Expand shared forecast anchors without changing the Part B start dates."""
+    settings = config["lead_time"]
+    windows = []
+    for anchor in config["forecast"]["start_dates"]:
+        first = date.fromisoformat(anchor) - timedelta(days=settings["days_before"])
+        count = settings["days_before"] + settings["days_after"] + 1
+        windows.append({"anchor": anchor,
+            "start_dates": [(first + timedelta(days=i)).isoformat() for i in range(count)]})
+    return windows
+
+
+def validate_lead_time(config):
+    validate_common(config, require_forecast_dates=True)
+    validate_threshold_choice(config)  # same unit fallback and packing-trace treatment
+    settings = config.get("lead_time")
+    _object(settings, "lead_time", ("days_before", "days_after", "signal_probability",
+            "cache_directory", "output_directory", "max_source_mib"))
+    for key in ("days_before", "days_after"):
+        _number(settings[key], f"lead_time.{key}", 0, 20, integer=True)
+    if not 14 <= settings["days_before"] + settings["days_after"] + 1 <= 21:
+        raise ConfigError("lead_time.days_before/days_after: require a 14–21 day window")
+    _number(settings["signal_probability"], "lead_time.signal_probability", .0001, 1)
+    _number(settings["max_source_mib"], "lead_time.max_source_mib", 1, 100000)
+    for key in ("cache_directory", "output_directory"):
+        _text(settings[key], f"lead_time.{key}")
+    if config["comparison"]["duration"] != "24hr" or config["comparison"]["return_period_years"] != 2:
+        raise ConfigError("comparison: Part C requires the 2-year 24hr level")
+    dates = [day for window in lead_time_windows(config) for day in window["start_dates"]]
+    if len(set(dates)) != len(dates):
+        raise ConfigError("lead_time: start windows overlap; select separated forecast anchors")
+    if min(dates) < config["start_date"] or max(dates) > config["end_date"]:
+        raise ConfigError("lead_time: expanded starts must lie within start_date/end_date")
 
 
 def migrate_legacy(config):

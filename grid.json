@@ -133,6 +133,14 @@
     "output_directory": "out/threshold_choice",
     "max_source_mib": 1024
   },
+  "lead_time": {
+    "days_before": 7,
+    "days_after": 6,
+    "signal_probability": 0.2,
+    "cache_directory": "out/threshold_choice/cache",
+    "output_directory": "out/forecast_lead_time",
+    "max_source_mib": 8192
+  },
   "execution": {
     "workers": 2,
     "output_directory": "out/rainfall_thresholds"

@@ -278,6 +278,42 @@ and checksums. The three starts required correction of 51 small negative and
 367 small positive packing traces; the most negative daily increment was
 −0.03052 mm, within the recorded 0.04 mm tolerance.
 
+## Forecast lead-time analysis (Part C)
+
+Part C compares successive forecasts for the **same valid day**, using the local
+2-year, 24-hour CMORPH threshold. It uses all five towns and 14 daily forecast
+starts around each selected monthly anchor: **9–22 June, 9–22 July and 9–22
+August 2025**. The signal criteria are at least one ensemble member and at least
+20% of the 51-member ensemble (11 members), with coverage reported separately.
+The reported lead time is the earliest sampled forecast that signals for that
+valid day; this is a forecast diagnostic, not a verification of observed events
+or forecast skill.
+
+The source chunk layout implies about **7.5 GiB decoded** across 42 starts in a
+fresh runtime; the estimate falls to about 6.8 GiB if all three Part B point
+caches are present. Compressed transfer and peak RAM are not inferred from that
+figure. Run the metadata-only inspection first,
+then use the prepared [Colab/Kaggle notebook](notebooks/part_c_lead_time.ipynb)
+for extraction. It requires internet access and the four verified Part A handoff
+files (`thresholds.csv`, `annual_maxima.csv`, `settings_used.json` and
+`manifest.json`), supplied individually from the Part A output directory. The
+notebook does not require zip import. The script keeps per-start caches so a
+cloud interruption can be resumed; all generated outputs stay under
+`out/forecast_lead_time/`.
+
+```sh
+uv run python -m scripts.forecast_lead_time inspect --thresholds out/part_a_local
+uv run python -m scripts.forecast_lead_time extract --thresholds out/part_a_local
+uv run python -m scripts.forecast_lead_time plots
+```
+
+`inspect` reads forecast metadata and reports cache coverage and source volume,
+but does not fetch rainfall. `extract` enforces the configured source budget,
+records missing forecast starts as unavailable, and writes same-valid-day
+signals, lead-time summaries and strongest-start selections. `plots` is offline
+and produces five start-versus-lead heatmaps and five ensemble plumes. In a
+fresh clone, first run Part A and pass its output directory with `--thresholds`.
+
 ## Supplementary 27-year return-period figures
 
 The repository also includes a separate 24-hour analysis that produces one

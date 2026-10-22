@@ -131,14 +131,14 @@ def check_read_budget(report, config):
                          "start dates or explicitly raise this budget before extracting")
 
 
-def read_start(selected, date, config, out, snapshot, report):
+def read_start(selected, date, config, out, snapshot, report, *, cache_directory=None, cache_only=False):
     """Cache the small raw point slice before scientific validation, for safe retries."""
     inputs = {"store": {k: v for k, v in config["forecast"].items() if k != "start_dates"},
               "snapshot": snapshot, "date": date, "towns": report["towns"],
               "daily_lead_hours": report["daily_lead_hours"]}
     digest = config_hash(inputs)
-    cache_dir = out / "cache"
-    cache_dir.mkdir(exist_ok=True)
+    cache_dir = Path(cache_directory) if cache_directory is not None else out / "cache"
+    cache_dir.mkdir(parents=True, exist_ok=True)
     path = cache_dir / f"{date}-{digest[:16]}.nc"
     metadata = path.with_suffix(".json")
     if metadata.exists():
@@ -148,6 +148,8 @@ def read_start(selected, date, config, out, snapshot, report):
         print(f"Using cached cumulative town forecasts for {date}", flush=True)
         with xr.open_dataarray(path, engine="scipy", decode_timedelta=True) as cached:
             return cached.load()
+    if cache_only:
+        raise FileNotFoundError(f"No cached point forecast for {date}")
     cumulative = selected.sel(time=date).compute(scheduler="threads",
                                 num_workers=config["execution"]["workers"])
     # NetCDF3 needs only SciPy and avoids installing another binary dependency.
