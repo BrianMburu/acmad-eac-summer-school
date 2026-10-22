@@ -2,7 +2,8 @@
 
 ACMAD group project: define extreme rainfall at Khartoum, Kassala, Gedaref,
 El Obeid and Nyala using CMORPH annual maxima from 1998–2024 (Part A), then
-compare warning thresholds using June–August 2025 ECMWF forecasts (Part B).
+compare warning thresholds (Part B) and forecast lead times (Part C) using
+June–August 2025 ECMWF forecasts.
 
 See the [observed rainfall threshold task and results](RAINFALL_THRESHOLDS.md) for the assignment,
 acceptance criteria, completed local run and handoff to the other teams.
@@ -64,6 +65,7 @@ packages and performs no network access.
 | `WORKERS`, `OUTPUT_DIRECTORY` | Two workers, `out/rainfall_thresholds` |
 | `COMPARISON` | Planned forecast comparison: local 2-year 24-hour level, strict `>` |
 | `THRESHOLD_CHOICE` | Part B: all five towns, fixed 20 mm threshold, trace correction, unit fallback, output folder and read budget |
+| `LEAD_TIME` | Part C: 14-day start windows, 20% signal criterion, shared point cache, output folder and source-read budget |
 
 Inspect the effective settings or refresh the JSON export after editing:
 
@@ -292,9 +294,9 @@ or forecast skill.
 The source chunk layout implies about **7.5 GiB decoded** across 42 starts in a
 fresh runtime; the estimate falls to about 6.8 GiB if all three Part B point
 caches are present. Compressed transfer and peak RAM are not inferred from that
-figure. Run the metadata-only inspection first,
-then use the prepared [Colab/Kaggle notebook](notebooks/part_c_lead_time.ipynb)
-for extraction. It requires internet access and the four verified Part A handoff
+figure. Run the metadata-only inspection first. The prepared
+[Colab/Kaggle notebook](notebooks/part_c_lead_time.ipynb) is available for fresh
+runs. It requires internet access and the four verified Part A handoff
 files (`thresholds.csv`, `annual_maxima.csv`, `settings_used.json` and
 `manifest.json`), supplied individually from the Part A output directory. The
 notebook does not require zip import. The script keeps per-start caches so a
@@ -313,6 +315,55 @@ records missing forecast starts as unavailable, and writes same-valid-day
 signals, lead-time summaries and strongest-start selections. `plots` is offline
 and produces five start-versus-lead heatmaps and five ensemble plumes. In a
 fresh clone, first run Part A and pass its output directory with `--thresholds`.
+
+Part C completed locally on **22 October 2026 (UTC)** using source commit
+`214f6e2`. All **42 starts** contained finite forecasts at every town and member;
+none were skipped. The run produced **2,100 daily member counts**, **107,100
+rainfall values**, **30 lead-time summary rows**, **five heatmaps** and **five
+ensemble plumes**. A separate pandas recomputation matched all 2,100 exported
+counts and confirmed 51 distinct members per town/start/day. All **110 tests**
+passed. The results are retained in `out/forecast_lead_time/` and ignored by Git;
+the ten figures are in its `figures/` directory. No notebook execution is needed
+for this completed batch.
+
+The strongest sampled start at each town was in August. Starts are ranked by
+peak daily member count, then total member-day exceedances, then earliest date:
+
+| Town | Strongest initialization | Peak members above local 2-year level |
+|---|---|---:|
+| Khartoum | 20 August 2025 | 10/51 |
+| Kassala | 13 August 2025 | 13/51 |
+| Gedaref | 16 August 2025 | 10/51 |
+| El Obeid | 20 August 2025 | 3/51 |
+| Nyala | 19 August 2025 | 8/51 |
+
+Only **Kassala** reached the configured 20% criterion: the forecasts initialized
+on 13 and 14 August each had **13/51 members (25.5%)** above the threshold for
+the **24 hours ending 20 August at 00 UTC**, giving seven and six days of lead.
+For that same valid day, all ten available starts signalled with at least one
+member, but only two of ten reached the 20% criterion. The first one-member
+signal was at ten days' lead, the maximum sampled horizon. For the selected
+August peak day at each other town, one-member consistency was 9/9 at Nyala,
+7/8 at Khartoum, 8/10 at Gedaref and 6/8 at El Obeid; their first signals were
+also at ten days. Different coverage and different selected valid days limit
+direct comparisons of these percentages.
+
+Summed over the overlapping forecasts, there were **1, 76 and 584 member-day
+exceedances** in the June, July and August start windows, respectively. These
+totals count forecast member-days repeatedly across initializations, not
+independent rain events. Separate observations are still required to establish
+whether any of these forecast signals verified.
+
+The initial two-worker attempt saved two additional starts before being
+restarted. The resumed run used an explicit `execution.workers=8` override,
+recorded in `settings_used.json` and the manifest, while the shared default
+remains two workers. It reused five cached starts, took **2,181 seconds
+(36.3 minutes)** and peaked at **673 MiB RAM**. The initial attempt took another
+351 seconds, excluding restart overhead. The full selection touches 462 source
+chunks, about **7,530 MiB decoded**; actual compressed transfer was not measured.
+Across all 42 starts, 394 negative and 4,268 positive packing traces were
+corrected with the shared 0.04 mm tolerance; the most negative raw daily
+increment was −0.03052 mm.
 
 ## Supplementary 27-year return-period figures
 
