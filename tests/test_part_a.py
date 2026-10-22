@@ -2,16 +2,14 @@
 
 import copy
 import json
-from zipfile import ZipFile
 
-import nbformat
 import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
 from scipy.stats import gumbel_r
 
-from scripts.common import ROOT, load_config
+from scripts.common import load_config
 from scripts import part_a_thresholds
 from scripts.part_a_thresholds import (
     config_hash, diagnostics, empirical_positions, extract_arrays, inspect_stores,
@@ -162,15 +160,6 @@ def test_offline_plotting_and_changed_config_guard(stores, tmp_path):
         plot_outputs(changed, tmp_path)
 
 
-def test_notebook_valid_unexecuted_and_code_compiles():
-    notebook = nbformat.read(ROOT / "notebooks" / "part_a_thresholds.ipynb", as_version=4)
-    nbformat.validate(notebook)
-    for cell in notebook.cells:
-        if cell.cell_type == "code":
-            assert cell.execution_count is None and cell.outputs == []
-            compile(cell.source, "notebook-cell", "exec")
-
-
 def test_remote_stages_with_synthetic_stores(stores, tmp_path, monkeypatch):
     config, obs, fc = stores
     def fake_open(settings):
@@ -201,15 +190,3 @@ def test_failed_remote_inspection_exports_report_only(stores, tmp_path, monkeypa
     assert (tmp_path / "inspection.json").exists()
     assert (tmp_path / "coverage.csv").exists()
     assert not (tmp_path / "thresholds.csv").exists()
-
-
-def test_source_bundle_contains_lock_notebook_revision_and_no_generated_data(tmp_path):
-    from scripts.package_part_a import package
-    with ZipFile(package(tmp_path / "source.zip")) as bundle:
-        names = bundle.namelist()
-        assert {"grid.json", "uv.lock", "pyproject.toml", "source_revision.json",
-                "notebooks/part_a_thresholds.ipynb", "scripts/common.py",
-                "scripts/part_a_thresholds.py"} <= set(names)
-        assert not any(name.startswith(("out/", ".git/", ".venv/")) for name in names)
-        assert bundle.read("grid.json") == (ROOT / "grid.json").read_bytes()
-        assert json.loads(bundle.read("source_revision.json"))["git_commit"]

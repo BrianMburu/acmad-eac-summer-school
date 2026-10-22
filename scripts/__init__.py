@@ -1,1 +1,1 @@
-"""Reproducible analysis used by the Part A notebook."""
+"""Reproducible local analysis for Part A of the Sudan rainfall project."""

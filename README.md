@@ -4,31 +4,27 @@ Part A of the ACMAD group project: define extreme rainfall at Khartoum, Kassala,
 Gedaref, El Obeid and Nyala using CMORPH annual maxima from 1998–2024. Other
 subgroups compare these levels with June–August 2025 ECMWF forecasts.
 
-## Run on Colab or Kaggle
+See the [Part A task description and results](TASK_A.md) for the assignment,
+acceptance criteria, completed local run and handoff to the other teams.
 
-1. Open `notebooks/part_a_thresholds.ipynb` on Colab or Kaggle. Choose a CPU
-   runtime and enable Internet access.
-2. Upload `dist/part_a_source.zip` in Colab's Files panel, or attach the ZIP as a
-   Kaggle dataset. This bundle is generated locally; it is not tracked in Git.
-3. Run Setup and Inspect first. If inspection fails, return `inspection.json`
-   and `coverage.csv` from the printed output directory before continuing.
-4. If inspection passes, run Extract, Plot, Review and Download. Return
-   `part_a_results.zip` for review. No API keys, AWS credentials or GPU are needed.
+## Run locally
 
-The notebook uses uv to create its own Python 3.12 environment. Its kernel does
-not need scientific packages installed. Package downloads and public data access
-require Internet. The source bundle includes `uv.lock` for the analysis environment.
+Part A completed locally on 22 October 2026. Extraction took 67 seconds and used
+217 MiB peak RAM. The selected source chunks represent about 66 MiB uncompressed;
+the actual compressed network transfer was not measured. Local execution is the
+supported workflow for this task.
 
-## Local development
+Use Python 3.12 or newer with uv. The committed `uv.lock` records the dependency
+versions. Internet is required for installation, inspection and extraction;
+no API keys, AWS credentials or GPU are needed.
 
 ```sh
-uv sync --group dev --python 3.12
+uv sync --locked --group dev --python 3.12
 uv run pytest
-uv run python -m scripts.build_notebook
-uv run python -m scripts.package_part_a
 ```
 
-Heavy data reads are intended for the hosted notebook. The equivalent commands are:
+Run the three stages in order. Review the inspection report before extraction;
+coverage or unit failures stop the run.
 
 ```sh
 uv run python -m scripts.part_a_thresholds inspect
@@ -36,9 +32,16 @@ uv run python -m scripts.part_a_thresholds extract
 uv run python -m scripts.part_a_thresholds plots
 ```
 
-`plots` runs offline against `out/part_a`. To use returned cloud results, unzip
-the `results/` directory and pass its path with `--out`. If settings have changed,
-also pass `--config PATH/TO/results/settings_used.json`.
+The default output directory is `out/part_a`. The completed run is retained locally
+in `out/part_a_local`; its result archive is `out/part_a_results.zip`. Generated
+outputs are ignored by Git. To regenerate figures from the completed run offline:
+
+```sh
+uv run python -m scripts.part_a_thresholds plots --out out/part_a_local --config out/part_a_local/settings_used.json
+```
+
+Use `--out PATH` to choose another output directory for any stage. If settings
+have changed since extraction, plot with the saved `settings_used.json`.
 
 ## Settings and methods
 
@@ -50,7 +53,7 @@ nearest-point selection. Forecast data values are not read by Part A.
 
 Part A requires 24-hour and 48-hour durations and 2-, 10-, 50-year return periods.
 If 48hr is absent, inspection lists available durations and stops; agree a second
-duration and update the configuration before repackaging. Forecast start dates
+duration and update the configuration before rerunning. Forecast start dates
 are still a group decision (`forecast.start_dates` is null); B/C/D must check
 finite data for every selected start because unwritten starts may read as NaN.
 
@@ -89,7 +92,7 @@ Each row includes requested and selected coordinates, units and reference years.
 For D, town thresholds are insufficient: obtain a local CMORPH threshold at each
 forecast pixel as in E8. Our 10-year map is a reference map, not D's 2-year map.
 
-Do not commit downloaded data, generated results or executed notebook outputs.
+Do not commit downloaded data or generated result files.
 Share reviewed thresholds/results as a release artifact or another agreed group
 location, with the corresponding source commit. Changes should be reviewed on
 `part-a-thresholds` before merging, as required by the assignment.

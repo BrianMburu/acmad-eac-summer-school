@@ -211,8 +211,6 @@ def provenance(config, snapshots):
     return {"created_utc": datetime.now(timezone.utc).isoformat(),
             "config_sha256": config_hash(config), "store_snapshots": snapshots,
             "git_commit": git("rev-parse", "HEAD"), "git_status": git("status", "--short"),
-            "source_bundle_revision": json.loads((ROOT / "source_revision.json").read_text())
-                                      if (ROOT / "source_revision.json").exists() else None,
             "python": platform.python_version(),
             "packages": {p: importlib.metadata.version(p) for p in
                          ["icechunk", "zarr", "xarray", "dask", "numpy", "pandas", "scipy", "matplotlib"]},
