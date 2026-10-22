@@ -55,3 +55,10 @@ The revised Task C is saved as `task_C`. Its `analyze.py` generates five
 selections. The report identifies the target intervals behind earliest and
 longest-streak metrics and tests criteria of 1, 3 and 5 members. Script, grid
 and input hashes plus Git revision are recorded in its final run metadata.
+
+The revised Task D is saved as `task_D`. Its `analyze.py` generates four
+`probabilities_YYYY-MM-DD.png` figure sets and `sampled_season_frequency.png`.
+Its own `grid.json` determines all five town markers and regional bounds.
+The script recalculates sampled frequencies from retained actual probabilities
+and documents original cloud timing records separately from local-cache reads.
+Script, grid and input hashes plus Git revision are recorded with its outputs.

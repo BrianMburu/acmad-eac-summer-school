@@ -1,0 +1,8 @@
+icechunk>=2.2.2
+zarr>=3.1,<4
+xarray>=2025.1
+dask
+numpy
+scipy
+pandas
+matplotlib
