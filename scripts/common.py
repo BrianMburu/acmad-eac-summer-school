@@ -35,7 +35,7 @@ TOWN_EXTENT_HALF_WIDTH_DEGREES = 0.5  # derive 1° × 1° boxes from the centres
 # Forecast dates are separate from historical CMORPH reference years.
 FORECAST_START_DATE = "2025-06-01"
 FORECAST_END_DATE = "2025-08-31"
-FORECAST_START_DATES = None  # whole-group decision; required before forecast reads
+FORECAST_START_DATES = ["2025-06-16", "2025-07-16", "2025-08-16"]
 CMORPH_YEARS = (1998, 2024)
 
 # Pinned snapshots reproduce the completed run. Set snapshot_id to None to
@@ -65,6 +65,12 @@ COMPARISON = {"duration": "24hr", "return_period_years": 2,
 WORKERS = 2
 OUTPUT_DIRECTORY = "out/rainfall_thresholds"
 
+# Part B compares all configured towns for the selected forecast start above.
+THRESHOLD_CHOICE = {"towns": [town["name"] for town in TOWNS], "fixed_threshold_mm": 20.0,
+                    "forecast_units_if_missing": "m",  # cumulative tp, workshop E5/E6
+                    "trace_rainfall_mm": 0.04,  # ECMWF guidance for 10-day GRIB packing noise
+                    "output_directory": "out/threshold_choice", "max_source_mib": 1024}
+
 
 def default_config():
     """Build a fresh dictionary; callers cannot mutate the module's defaults."""
@@ -85,6 +91,7 @@ def default_config():
                            "map_duration": MAP_DURATION, "map_return_period_years": MAP_RETURN_PERIOD,
                            "units_if_missing": UNITS_IF_MISSING},
             "comparison": deepcopy(COMPARISON),
+            "threshold_choice": deepcopy(THRESHOLD_CHOICE),
             "execution": {"workers": WORKERS, "output_directory": OUTPUT_DIRECTORY}}
 
 
@@ -183,7 +190,7 @@ def validate_common(config, require_forecast_dates=False):
     """Validate shared settings without imposing the threshold task's requirements."""
     _object(config, "config", ("schema_version", "country", "country_code", "coordinate_reference_system",
             "coordinate_source", "region_extent", "towns", "start_date", "end_date", "forecast",
-            "cmorph_reference", "comparison", "execution"), optional=("thresholds",))
+            "cmorph_reference", "comparison", "execution"), optional=("thresholds", "threshold_choice"))
     if type(config["schema_version"]) is not int or config["schema_version"] != 2:
         raise ConfigError("schema_version: expected 2")
     for key in ("country", "country_code", "coordinate_source"):
@@ -275,6 +282,27 @@ def validate_thresholds(config):
     ref = config["cmorph_reference"]
     if ref["reference_end_year"] - ref["reference_start_year"] < 3:
         raise ConfigError("cmorph_reference: threshold fitting requires at least four annual maxima")
+
+
+def validate_threshold_choice(config):
+    """Part B settings; older Part A settings remain readable without these fields."""
+    validate_common(config, require_forecast_dates=True)
+    settings = config.get("threshold_choice")
+    _object(settings, "threshold_choice", ("towns", "fixed_threshold_mm",
+            "forecast_units_if_missing", "trace_rainfall_mm", "output_directory", "max_source_mib"))
+    towns = settings["towns"]
+    names = {town["name"] for town in config["towns"]}
+    if (not isinstance(towns, list) or not 2 <= len(towns) <= len(names)
+            or not all(isinstance(town, str) and town in names for town in towns)
+            or len(set(towns)) != len(towns)):
+        raise ConfigError("threshold_choice.towns: select 2–5 distinct configured town names")
+    if settings["fixed_threshold_mm"] != 20 or isinstance(settings["fixed_threshold_mm"], bool):
+        raise ConfigError("threshold_choice.fixed_threshold_mm: Part B requires 20 mm in 24 h")
+    if settings["forecast_units_if_missing"] not in (None, "m", "mm"):
+        raise ConfigError("threshold_choice.forecast_units_if_missing: choose m, mm or null")
+    _text(settings["output_directory"], "threshold_choice.output_directory")
+    _number(settings["trace_rainfall_mm"], "threshold_choice.trace_rainfall_mm", 0, 0.1)
+    _number(settings["max_source_mib"], "threshold_choice.max_source_mib", 1, 100000)
 
 
 def migrate_legacy(config):
