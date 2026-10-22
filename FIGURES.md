@@ -30,3 +30,8 @@ Task C's `part_c_forecast_signals/analyze.py` generates `*_heatmap.png` and
 `*_strongest_start_plume.png` for the five town names (lowercase, spaces replaced
 with underscores). Its run metadata records the generating script hash and Git
 revision. These figures are pending the first connected Task C data extraction.
+
+Task D's `part_d_risk_maps/analyze.py` generates four
+`probabilities_YYYY-MM-DD.png` figures and `sampled_season_frequency.png` with
+town markers. The default frequency summarizes 20 sampled forecast intervals,
+not the full season. Its metadata records the script hash and Git revision.
