@@ -25,3 +25,8 @@ forecast initialization, QC corrections, and domain-check status. The cached
 run's source-domain validation limitation must be retained if its figures are
 presented before refreshing metadata checks online. This repository does not
 contain a slide deck; this list covers the figures produced by Parts A and B.
+
+Task C's `part_c_forecast_signals/analyze.py` generates `*_heatmap.png` and
+`*_strongest_start_plume.png` for the five town names (lowercase, spaces replaced
+with underscores). Its run metadata records the generating script hash and Git
+revision. These figures are pending the first connected Task C data extraction.
