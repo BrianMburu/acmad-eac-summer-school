@@ -6,3 +6,4 @@ results.txt
 run_metadata.json
 *.npz
 domain_validation.json
+figure_provenance.json

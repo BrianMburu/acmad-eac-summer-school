@@ -14,6 +14,11 @@ documented dependencies. No manually redrawn figures are required.
 | `regional_10yr_24hr.png` | `part_a_extremes/analyze.py` |
 | `khartoum_threshold_counts.png` | `part_b_warnings/analyze.py` |
 | `kassala_threshold_counts.png` | `part_b_warnings/analyze.py` |
+| `two_town_threshold_comparison.png` | `part_b_warnings/plot_results.py` |
+
+Part B calls `plot_results.py` for the final versions of both town figures and
+the combined comparison. It can also redraw them directly from the saved
+`daily_member_counts.csv`, with no cloud access.
 
 Part B writes `run_metadata.json` with the script SHA-256, Git commit revision,
 forecast initialization, QC corrections, and domain-check status. The cached

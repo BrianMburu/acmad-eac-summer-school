@@ -286,6 +286,8 @@ def main():
         reused_point_cache=args.use_cache,
         versions={k: v for k, v in [('xclim', xclim.__version__), ('xarray', xr.__version__)]})
     (ROOT/'run_metadata.json').write_text(json.dumps(metadata, indent=2)+'\n')
+    from plot_results import render
+    render(ROOT)
     print('\n'.join(notes), flush=True)
     print(f'All outputs saved in {ROOT}', flush=True)
 
