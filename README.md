@@ -3,8 +3,8 @@
 Part A of the ACMAD group project: define extreme rainfall at Khartoum, Kassala,
 Gedaref, El Obeid and Nyala using CMORPH annual maxima from 1998–2024. Other
 subgroups compare these levels with June–August 2025 ECMWF forecasts. The
-repository also contains the Part B threshold-count and Part C lead-time
-analyses.
+repository also contains the Part B threshold-count, Part C lead-time and Part D
+region-risk analyses.
 
 See the [observed rainfall threshold task and results](RAINFALL_THRESHOLDS.md) for the assignment,
 acceptance criteria, completed local run and handoff to the other teams.
@@ -306,6 +306,85 @@ relatively low 32.3 mm level with repeated wet members, while Kassala's early
 4 July signal is isolated (9/21 starts). These are member counts, not
 probabilities, and the window starts on 1 July, so the analysis cannot establish
 whether a warning existed before the window.
+
+## Region-risk probability and frequency maps (Part D)
+
+[`scripts/region_risk_maps.py`](scripts/region_risk_maps.py) asks where across
+the region the forecast risk was highest. It adapts the E8 local-threshold
+probability map and the E3 pan-chunk lesson: the region and whole-day steps are
+selected before the remote data are computed, so each forecast day is one map
+read rather than a point time series.
+
+For each randomly selected start, the script reads the cumulative `tp` at 0 and
+24–120 hours, differences the whole-day steps, and converts metres to millimetres.
+At every forecast grid point the threshold is the nearest-pixel CMORPH 24-hour
+2-year level. The probability is the fraction of the 51 members **strictly above**
+that local threshold for each forecast day 1–5. The season frequency at a grid
+point is the number of selected **start/day cases** whose probability reaches the
+chosen level; with four starts and five days there are 20 possible cases. The
+default chosen probability is **20%**. Any start that reads back as all-NaN is
+skipped and reported.
+
+The random starts are stratified over four equal blocks of the configured June–August
+season, using seed 42 by default. This guarantees samples spread through the season
+while remaining reproducible; `--start-dates` accepts an explicit set of three or
+four dates. The five Part C town centres are drawn on every map.
+
+```sh
+uv run python -m scripts.region_risk_maps --config grid.json --n-starts 4 --seed 42
+```
+
+Useful overrides are `--start-dates YYYY-MM-DD ...`, `--days 1,2,3,4,5`,
+`--probability 0.20` (a fraction) and `--out PATH`. The run writes ignored output
+under `out/region_risk/`:
+
+| Output | Purpose |
+|---|---|
+| `09_probability_map_<YYYYMMDD>_p20.png` | Five-panel probability map for one start, days 1–5, with the 20% contour and Part C towns |
+| `09_frequency_map_p20.png` | One season map: number of the 20 start/day cases at or above 20% probability |
+| `09_region_risk_summary.csv` | Peak probability, peak location/day, number of grid points at or above the chosen level, and map-read seconds for each start |
+| `09_region_risk_hotspots.csv` | Top 15 grid points ranked by frequency, then peak probability |
+
+### Completed run, four stratified starts
+
+The default run used forecast snapshot `212QY6MDW3RZ7PWD7A2G` and CMORPH snapshot
+`309ZYV7EMDMNPD0EDZK0`. With seed 42 it selected **3 June, 11 July, 1 August and
+19 August 2025**; no selected start was all-NaN. The local 2-year threshold over
+the 20 × 52 forecast subset ranged from 7.7 to 93.8 mm/day. The four starts took
+about 40 seconds of map reads, and the complete run including the threshold map
+and figures took 61 seconds.
+
+| Start | Maximum probability | Peak location | Peak day | Grid points with p ≥ 20% |
+|---|---:|---|---:|---:|
+| 2025-06-03 | 0.0% | — | — | 0 |
+| 2025-07-11 | 29.4% | 15.25°N, 26.50°E | 4 | 1 |
+| 2025-08-01 | 23.5% | 14.50°N, 25.00°E | 4 | 1 |
+| 2025-08-19 | **39.2%** | **12.75°N, 24.25°E** | **5** | **16** |
+| Season | **39.2%** | 12.75°N, 24.25°E | 5 | 18 |
+
+The highest risk was in the **west/south-west**, especially the strip around
+24.25–25.0°E and 11.5–13.25°N near and west of Nyala. The single strongest cell
+was 12.75°N, 24.25°E on day 5 of the 19 August start (valid 24 August), at 39.2%
+probability. The 19 August start supplied 16 of the 18 grid points that reached
+20% at least once. Two weaker, isolated 20% cells appeared near 14.5°N, 25°E and
+15.25°N, 26.5°E; the eastern towns (Khartoum, Kassala, Gedaref) had no 20%
+probability area in these four starts.
+
+The frequency map is deliberately strict: no grid point reached 20% in more than
+**1 of the 20 start/day cases**, so the 20% signal was isolated rather than
+widespread. A sensitivity run at 10% probability (`--probability 0.10`) keeps the
+same western/south-western focus, but the maximum frequency rises to 5 of 20 cases
+at 13.0°N, 24.25°E and more of the west is highlighted. Eastern Sudan remains
+quiet at either level. The frequency counts are descriptive: the five days within
+one start are not independent samples, and four starts do not sample the whole
+season exhaustively.
+
+The forecast `tp` chunks are pan chunks of shape `(1, 1, 51, 321, 261)`: each
+selected start/day is one complete member × map slab. Selecting the 20 × 52 region
+and only six whole-day steps before `.compute()` therefore reads 24 pan chunks
+for the four starts; the script does not materialise all 65 steps or read pencil
+time series. This is why the map reads are cheap compared with a point-by-point
+loop, as demonstrated in E3.
 
 ## Limits and workshop sources
 
