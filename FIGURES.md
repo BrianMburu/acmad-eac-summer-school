@@ -48,3 +48,10 @@ figures and `two_town_threshold_comparison.png`. Current analysis/renderer and
 input hashes plus Git revision are recorded with its final outputs. Task B now
 uses all five towns from grid.json; its combined figure is
 `task_B/five_town_threshold_comparison.png` (five rows, three thresholds).
+
+The revised Task C is saved as `task_C`. Its `analyze.py` generates five
+`*_heatmap.png` figures, five `*_strongest_start_plume.png` figures and
+`five_town_heatmap_comparison.png`. The local `grid.json` drives all town
+selections. The report identifies the target intervals behind earliest and
+longest-streak metrics and tests criteria of 1, 3 and 5 members. Script, grid
+and input hashes plus Git revision are recorded in its final run metadata.
