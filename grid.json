@@ -80,7 +80,11 @@
     "latitude_order": "descending",
     "available_start_date": "2025-06-01",
     "available_end_date": "2025-08-31",
-    "start_dates": null
+    "start_dates": [
+      "2025-06-01",
+      "2025-07-01",
+      "2025-08-01"
+    ]
   },
   "cmorph_reference": {
     "endpoint": "https://data.source.coop",
@@ -114,6 +118,17 @@
     "return_period_years": 2,
     "exceedance_operator": ">",
     "matching": "nearest"
+  },
+  "threshold_choice": {
+    "towns": [
+      "Khartoum",
+      "Gedaref"
+    ],
+    "fixed_threshold_mm": 20.0,
+    "forecast_units_if_missing": "m",
+    "trace_rainfall_mm": 0.04,
+    "output_directory": "out/threshold_choice",
+    "max_source_mib": 1024
   },
   "execution": {
     "workers": 2,

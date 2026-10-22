@@ -1,8 +1,8 @@
 # Sudan rainfall extremes
 
-Part A of the ACMAD group project: define extreme rainfall at Khartoum, Kassala,
-Gedaref, El Obeid and Nyala using CMORPH annual maxima from 1998–2024. Other
-subgroups compare these levels with June–August 2025 ECMWF forecasts.
+ACMAD group project: define extreme rainfall at Khartoum, Kassala, Gedaref,
+El Obeid and Nyala using CMORPH annual maxima from 1998–2024 (Part A), then
+compare warning thresholds using June–August 2025 ECMWF forecasts (Part B).
 
 See the [observed rainfall threshold task and results](RAINFALL_THRESHOLDS.md) for the assignment,
 acceptance criteria, completed local run and handoff to the other teams.
@@ -56,13 +56,14 @@ packages and performs no network access.
 | `REGION` | 24.25–37°E, 11.5–16.25°N |
 | `TOWNS` | Five Sudanese town centres; 1° boxes are derived automatically |
 | `FORECAST_START_DATE`, `FORECAST_END_DATE` | 1 June–31 August 2025 |
-| `FORECAST_START_DATES` | `None`, pending the whole-group decision |
+| `FORECAST_START_DATES` | Initial sample: 1 June, 1 July and 1 August 2025; shared by forecast analyses |
 | `CMORPH_YEARS` | 1998–2024 |
 | `CMORPH_STORE`, `FORECAST_STORE` | Public store locations, coordinate order and pinned snapshots |
 | `DURATIONS`, `RETURN_PERIODS` | 24/48 hours and 2/10/50 years |
 | `MAP_DURATION`, `MAP_RETURN_PERIOD` | 24 hours, 10 years |
 | `WORKERS`, `OUTPUT_DIRECTORY` | Two workers, `out/rainfall_thresholds` |
 | `COMPARISON` | Planned forecast comparison: local 2-year 24-hour level, strict `>` |
+| `THRESHOLD_CHOICE` | Part B: Khartoum/Gedaref, fixed 20 mm threshold, unit fallback, output folder and read budget |
 
 Inspect the effective settings or refresh the JSON export after editing:
 
@@ -108,9 +109,10 @@ not read by the observed-threshold analysis.
 
 Part A requires 24-hour and 48-hour durations and 2-, 10-, 50-year return periods.
 If 48hr is absent, inspection lists available durations and stops; agree a second
-duration and update the configuration before rerunning. Forecast start dates
-are still a group decision (`FORECAST_START_DATES` is `None`); B/C/D must check
-finite data for every selected start because unwritten starts may read as NaN.
+duration and update the configuration before rerunning. The initial forecast starts
+sample each month; adjust them when the group selects its event window for C/D.
+B/C/D must check finite data for every selected start because unwritten starts may
+read as NaN.
 
 Annual maxima and return levels must be rainfall **depths** in mm (equivalent
 kg/m² depths are accepted). If units metadata is absent, the explicit E4 mm
@@ -155,6 +157,86 @@ artifact or another agreed group location, with the corresponding source commit.
 The Part A review was completed during branch unification; the corrected Part A
 and supplementary analyses now share one code path, and the original review
 branch was `part-a-thresholds`.
+
+## Warning threshold comparison (Part B)
+
+The task asks how much the warning signal changes with the definition of extreme
+rainfall. At **Khartoum and Gedaref**, compare the 51-member daily forecast with
+three thresholds: fixed **20 mm / 24 h**, the town's **2-year 24-hour** level and
+its **10-year 24-hour** level from Part A. Khartoum and Gedaref give contrasting
+historical rainfall levels. The initial forecast starts are **1 June, 1 July and
+1 August 2025**; each has ten forecast days. This is a sample across the season,
+not a count of all June–August rainfall events.
+
+The script adapts workshop **E5** (daily totals and xclim) and **E6** (local
+thresholds and member counts), using the shared store and coordinate helpers.
+It verifies the Part A manifest, result checksums, geographical settings,
+reference years and CMORPH snapshot before consuming its thresholds. In a fresh
+clone, run the Part A extraction first. Then run:
+
+```sh
+uv run python -m scripts.threshold_choice inspect
+uv run python -m scripts.threshold_choice extract
+uv run python -m scripts.threshold_choice plots
+```
+
+For the completed local Part A results, pass `--thresholds out/part_a_local` to
+`inspect` and `extract`. Use `--out PATH` on all stages to select another output
+folder. `plots` uses the saved settings and tables and needs no internet access.
+Edit `THRESHOLD_CHOICE` and `FORECAST_START_DATES` in `scripts/common.py`, then
+refresh `grid.json` with `python -m scripts.common --export grid.json`.
+
+Forecast latitude descends. The script checks the domain before nearest-point
+selection and reads both towns together, selecting daily leads before computing.
+The source has no `tp` unit attribute; the explicit, recorded workshop assumption
+is **cumulative metres from initialization**. Convert to mm, then difference
+consecutive 24-hour endpoints. If lead zero is absent, the 24-hour accumulation
+is the first day's total. Contradictory units, partial missing data, nonzero
+initial accumulation and material decreases stop the run. ECMWF documents tiny
+positive and negative increments caused by GRIB packing; values below
+`THRESHOLD_CHOICE["trace_rainfall_mm"]` (0.04 mm initially) are set to zero,
+and decreases beyond that tolerance still fail. The raw minimum and numbers of
+corrected traces are recorded per start. This treatment follows the
+[ECMWF packing guidance](https://confluence.ecmwf.int/spaces/UDOC/pages/208501579/Why+are+there+sometimes+small+negative+precipitation+accumulations+-+ecCodes+GRIB+FAQ)
+for ten-day forecasts and cannot change any of the three warning comparisons,
+whose smallest threshold is 20 mm. Entirely NaN starts
+are recorded and skipped; a run with no usable starts fails.
+
+All counts use strict **`>`**, including `xclim.indices.wetdays(..., op=">")`.
+Equality does not trigger a warning. xclim counts heavy days per member for each
+threshold over that start's available forecast horizon, with an independent
+direct-count check. It does not produce a full seasonal count from ten days.
+Daily intervals are restricted to the configured season; a valid end time of
+1 September at 00 UTC closes the last August day.
+
+The three-start selection touches **33 source chunks, about 538 MiB decoded**,
+although the selected cumulative point values occupy about 14 KiB. Both towns
+share the same map chunks. The script warns above 256 MiB and refuses reads above
+`THRESHOLD_CHOICE["max_source_mib"]` (initially 1024 MiB). It processes one start
+at a time with `WORKERS` workers. These are decoded source estimates; compressed
+network transfer and peak RAM differ. Local execution is the initial workflow;
+larger selections should be inspected before deciding whether to use Colab/Kaggle.
+
+| Output under `out/threshold_choice/` | Purpose |
+|---|---|
+| `daily_member_counts.csv` | Each start × town × forecast day × threshold: count and percentage of 51 members |
+| `summary_counts.csv` | Short table: peak daily count, member-days above, members with any heavy day and heavy-day summaries |
+| `heavy_rain_days.csv` | xclim heavy-day count for every member, start, town and threshold |
+| `daily_rainfall.csv` | Small daily town-series cache in mm per 24 h, with forecast coordinates and valid end times |
+| `cache/*.nc`, `cache/*.json` | Raw cumulative point slices, snapshots/input hashes and checksums; completed reads are reused on retry |
+| `thresholds_used.csv` | Six thresholds and observed annual-maxima exceedance counts for context |
+| `forecast_starts.json` | Used and skipped starts, with reasons |
+| `figures/*_threshold_choice.png` | One figure per town, one panel per usable start, all three threshold curves |
+| `manifest.json`, `settings_used.json` | Source commit/hashes, snapshots, Part A handoff hashes, versions and result checksums |
+| `inspection.json`, `inspection_status.json`, `run_status.json` | Metadata, source-size estimate and separate inspection/extraction status |
+
+The optional extension compares the fraction of the 27 annual maxima above each
+level (`thresholds_used.csv`) with the fraction of forecast member-days above it
+(`summary_counts.csv`). A 2-year annual-maximum level has approximately a 50%
+annual exceedance probability; that does not mean half of individual days should
+exceed it. Forecast counts describe this sample of model forecasts, not observed
+daily frequencies or verified warning skill. Separate 2025 observations are needed
+to assess missed events or false alarms.
 
 ## Supplementary 27-year return-period figures
 

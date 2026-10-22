@@ -188,7 +188,7 @@ def test_offline_plotting_and_changed_config_guard(stores, tmp_path):
     assert len(images) == 6
     assert all(p.stat().st_size > 1000 for p in images)
     changed = copy.deepcopy(config)
-    changed["start_date"] = "2025-06-02"
+    changed["end_date"] = "2025-08-30"
     with pytest.raises(ValueError, match="Settings differ"):
         plot_outputs(changed, tmp_path)
 
@@ -377,11 +377,11 @@ def test_legacy_cache_replay_preserves_hash_verification(stores, tmp_path):
     assert migrated["forecast"]["snapshot_id"] is None
     verify_saved_settings(migrated, tmp_path)
     changed = copy.deepcopy(migrated)
-    changed["start_date"] = "2025-06-02"
+    changed["end_date"] = "2025-08-30"
     with pytest.raises(ValueError, match="Settings differ"):
         verify_saved_settings(changed, tmp_path)
     # Editing saved settings must not make the original extraction hash valid.
-    legacy["start_date"] = "2025-06-02"
+    legacy["end_date"] = "2025-08-30"
     write_json(settings_path, legacy)
     with pytest.raises(ValueError, match="Settings differ"):
         verify_saved_settings(load_config(settings_path), tmp_path)
