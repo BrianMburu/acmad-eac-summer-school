@@ -32,9 +32,10 @@ uv run python -m scripts.rainfall_thresholds extract
 uv run python -m scripts.rainfall_thresholds plots
 ```
 
-The default output directory is `out/rainfall_thresholds`. The completed run is retained locally
-in `out/part_a_local`; its result archive is `out/part_a_results.zip`. Generated
-outputs are ignored by Git. To regenerate figures from the completed run offline:
+The default output directory is `out/rainfall_thresholds`. The completed run's generated
+files are ignored by Git and are not included in a fresh clone; the completed run is
+retained locally in `out/part_a_local`, with its result archive at `out/part_a_results.zip`.
+If that local directory is available, regenerate its figures offline with:
 
 ```sh
 uv run python -m scripts.rainfall_thresholds plots --out out/part_a_local --config out/part_a_local/settings_used.json
@@ -92,6 +93,10 @@ that each selected start actually contains finite data.
 
 Store `snapshot_id` values pin the completed run's data. Set a snapshot to `None`
 to follow that store's `branch`; each run records the actual snapshot it reads.
+Plotting checks the configured snapshot, the extraction hash and result-file
+checksums, and refuses a run whose `run_status.json` is not `ok`. Extraction
+stages all result files and promotes them together, so a failed rerun cannot
+silently mix new tables with an old map or manifest.
 
 The regional box includes neighbouring areas and is not a Sudan boundary mask.
 Town thresholds use the nearest CMORPH pixel to the town centre. Coverage in both
@@ -131,7 +136,8 @@ and the stored level. This separates removal sensitivity from estimator differen
 | `sensitivity_50yr.csv` | Full and leave-largest-out refits, differences in mm and percent |
 | `regional_10yr_24hr.npz` | Small regional map cache for offline plotting |
 | `figures/` | Five town figures and the regional 10-year, 24-hour map |
-| `manifest.json`, `settings_used.json` | Data snapshot IDs, source hashes, versions, checks and settings |
+| `manifest.json`, `settings_used.json` | Data snapshot IDs, source hashes, versions, checks, result checksums and settings |
+| `run_status.json` | `ok`, `failed` or `inspected`; plotting requires `ok` when present |
 
 For B/C, filter `thresholds.csv` to `duration == "24hr"`, then join by `town` and
 `return_period_years`. Use `threshold_mm` against forecast **mm in 24 hours**.
@@ -139,18 +145,29 @@ Each row includes requested and selected coordinates, units and reference years.
 For D, town thresholds are insufficient: obtain a local CMORPH threshold at each
 forecast pixel as in E8. Our 10-year map is a reference map, not D's 2-year map.
 
-Do not commit downloaded data or generated result files.
-Share reviewed thresholds/results as a release artifact or another agreed group
-location, with the corresponding source commit. Changes should be reviewed on
-`part-a-thresholds` before merging, as required by the assignment.
+Do not commit downloaded data or generated result files, except the five
+supplementary PNGs noted below. Share reviewed thresholds/results as a release
+artifact or another agreed group location, with the corresponding source commit.
+The Part A review was completed during branch unification; the corrected Part A
+and supplementary analyses now share one code path, and the original review
+branch was `part-a-thresholds`.
 
 ## Supplementary 27-year return-period figures
 
-The `erick` branch adds a separate 24-hour analysis that produces one three-panel
-figure per town for the 27-year return level. The script is
+The repository also includes a separate 24-hour analysis that produces one
+three-panel figure per town for the 27-year return level. The script is
 [`scripts/cmorph_return_periods.py`](scripts/cmorph_return_periods.py), adapted from
-workshop exercise E4. It reads the town list from `grid.json` and writes one PNG per
-town to `out/`.
+workshop exercise E4. It uses the same shared settings, pinned CMORPH snapshot,
+coverage/unit checks and Gumbel helpers as the Part A pipeline; `grid.json` remains
+the generated export. Run it with:
+
+```sh
+uv run python -m scripts.cmorph_return_periods
+```
+
+It writes one PNG per town to `out/` and a small ignored
+`out/04_cmorph_return_periods_manifest.json` recording the snapshot, settings hash,
+units, years and output files.
 
 | Town | 27-year 24-hour level (mm) |
 |---|---:|

@@ -1,6 +1,6 @@
 # 27-year CMORPH rainfall extremes — supplementary figures
 
-This document describes the supplementary 27-year return-period figures on the `erick` branch.
+This document describes the supplementary 27-year return-period figures included with Part A.
 They use the same CMORPH 1998–2024 record and the five Sudanese towns as the Part A thresholds,
 but focus on a single 24-hour, 27-year return level and one three-panel figure per town.
 
@@ -13,8 +13,9 @@ distribution parameters, and produces a figure with:
 
 ## Study locations
 
-The towns are defined in [`grid.json`](grid.json), which is a generated export of
-[`scripts/common.py`](scripts/common.py) in the Part A workflow.
+The towns are defined in the shared settings in
+[`scripts/common.py`](scripts/common.py); [`grid.json`](grid.json) is the generated
+export of the same settings.
 
 | Town | Latitude | Longitude |
 |---|---:|---:|
@@ -38,13 +39,16 @@ The analysis reads the public CMORPH return-period store directly; no credential
 | Variables | `annual_maxima`, `return_period_precip`, `dist_location`, `dist_scale` |
 | Stored return periods | 2, 5, 10, 20, 50, 100 years |
 
-The store is an Icechunk/Zarr v3 dataset. Latitude is ascending (−14.5° to 25.5°) and longitude
-runs from about 19.5° to 54.0°, covering all five towns.
+The store is an Icechunk/Zarr v3 dataset read from the pinned snapshot in the shared settings
+(`309ZYV7EMDMNPD0EDZK0`). Latitude is ascending (−14.5° to 25.5°) and longitude runs from about
+19.5° to 54.0°, covering all five towns.
 
 ## Method
 
-For every town the nearest CMORPH pixel to the coordinates in `grid.json` is selected, and the
-27-year series of annual maxima is read. Return levels follow the Gumbel distribution
+For every town the nearest CMORPH pixel to the shared town coordinates is selected, and the
+27-year series of annual maxima is read. Town coverage, the reference years and the rainfall
+units are validated before selection, using the same helpers as Part A. Return levels follow the
+Gumbel distribution
 
 ```
 x_T = μ − β · ln(−ln(1 − 1/T))
@@ -54,7 +58,8 @@ where `T` is the return period in years, `μ` is the Gumbel location parameter
 (`dist_location`) and `β` is the scale parameter (`dist_scale`).
 
 The store provides return levels for 2, 5, 10, 20, 50 and 100 years. The 27-year level is not
-stored, so it is computed from `μ` and `β`; the same formula reproduces every stored level exactly.
+stored, so it is computed from `μ` and `β`; the same formula reproduces every stored level to
+stored float32 precision (maximum difference below 0.000005 mm).
 
 ### 27-year 24-hour return levels
 
@@ -91,24 +96,30 @@ files under `out/` are covered by the repository `.gitignore`.
 The analysis script is [`scripts/cmorph_return_periods.py`](scripts/cmorph_return_periods.py),
 adapted from exercise 04 of
 [`icpac-igad/python-workshop`](https://github.com/icpac-igad/python-workshop). It reads the towns
-from `grid.json`, loops over them, and writes one PNG per town into `out/`.
+from the shared settings in [`scripts/common.py`](scripts/common.py) (exported to `grid.json`),
+loops over them, and writes one PNG per town into `out/`.
 
 From this repository directory, after `uv sync --locked --python 3.12`:
 
 ```bash
-uv run python scripts/cmorph_return_periods.py
+uv run python -m scripts.cmorph_return_periods
 ```
 
-It can also run in the workshop environment:
+It can also run against the generated `grid.json` export, or another saved
+configuration, and accepts a different duration, return period or output folder:
 
 ```bash
-uv run --project ../python-workshop python scripts/cmorph_return_periods.py
+uv run python -m scripts.cmorph_return_periods --config grid.json --duration 24hr \
+    --return-period 27 --out out
 ```
 
-The script accepts `--grid path/to/towns.json` to use a different town list. Results are written as
-`out/04_cmorph_return_periods_<town>.png`; re-running overwrites the existing figures.
+Use `--config PATH` (or its `--grid` alias) to select a saved settings JSON. Results are written as
+`out/04_cmorph_return_periods_<town>.png`; re-running overwrites the existing figures. A small
+`out/04_cmorph_return_periods_manifest.json` records the snapshot, settings hash, duration, return
+period, reference years, units, Gumbel-parameter check and generated files. It is ignored by Git.
 
-Dependencies: Python 3.12+, `icechunk`, `xarray`, `zarr`, `numpy` and `matplotlib`.
+Dependencies: the repository environment (Python 3.12+), including `icechunk`, `xarray`, `zarr`,
+`numpy` and `matplotlib`.
 
 ## Caveats
 

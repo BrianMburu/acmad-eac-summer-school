@@ -9,12 +9,26 @@ import pytest
 import xarray as xr
 from scipy.stats import gumbel_r
 
-from scripts.common import load_config, migrate_legacy, validate_thresholds
 from scripts import rainfall_thresholds
+from scripts.common import (
+    extraction_hash,
+    load_config,
+    migrate_legacy,
+    validate_thresholds,
+)
 from scripts.rainfall_thresholds import (
-    config_hash, diagnostics, empirical_positions, extract_arrays, inspect_stores,
-    plot_outputs, tables, validate_arrays, write_json,
+    config_hash,
+    diagnostics,
+    empirical_positions,
+    extract_arrays,
+    file_sha256,
+    inspect_stores,
+    plot_outputs,
+    tables,
+    validate_arrays,
     verify_saved_settings,
+    write_json,
+    write_status,
 )
 
 
@@ -61,6 +75,16 @@ def test_extract_paired_towns_and_complete_handoff(stores):
         actual = thresholds[(thresholds.town == town["name"]) & (thresholds.duration == "24hr")
                             & (thresholds.return_period_years == 2)].threshold_mm.iloc[0]
         assert actual == expected
+        expected_48 = float(obs.return_period_precip.sel(duration="48hr", return_period=10).sel(
+            lat=town["latitude"], lon=town["longitude"], method="nearest"))
+        actual_48 = thresholds[(thresholds.town == town["name"]) & (thresholds.duration == "48hr")
+                               & (thresholds.return_period_years == 10)].threshold_mm.iloc[0]
+        assert actual_48 == expected_48
+        expected_max = float(obs.annual_maxima.sel(duration="48hr", year=2017).sel(
+            lat=town["latitude"], lon=town["longitude"], method="nearest"))
+        actual_max = maxima[(maxima.town == town["name"]) & (maxima.duration == "48hr")
+                            & (maxima.year == 2017)].rainfall_mm.iloc[0]
+        assert actual_max == expected_max
 
 
 def test_coverage_does_not_silently_snap(stores):
@@ -164,7 +188,7 @@ def test_offline_plotting_and_changed_config_guard(stores, tmp_path):
 def test_remote_stages_with_synthetic_stores(stores, tmp_path, monkeypatch):
     config, obs, fc = stores
     def fake_open(settings):
-        return (obs if settings is config["cmorph_reference"] else fc), "synthetic-snapshot"
+        return (obs if settings["prefix"] == config["cmorph_reference"]["prefix"] else fc), settings["snapshot_id"]
     monkeypatch.setattr(rainfall_thresholds, "open_store", fake_open)
     inspection = tmp_path / "inspection_only"
     rainfall_thresholds.run_remote(config, inspection, inspection_only=True)
@@ -175,10 +199,35 @@ def test_remote_stages_with_synthetic_stores(stores, tmp_path, monkeypatch):
     assert len(pd.read_csv(results / "thresholds.csv")) == 30
     assert len(pd.read_csv(results / "annual_maxima.csv")) == 270
     manifest = json.loads((results / "manifest.json").read_text())
-    assert manifest["store_snapshots"]["cmorph"] == "synthetic-snapshot"
+    assert manifest["store_snapshots"]["cmorph"] == config["cmorph_reference"]["snapshot_id"]
+    assert manifest["extraction_sha256"] == extraction_hash(config)
     assert manifest["quality_checks"]["town_values_finite"]
     assert manifest["source_sha256"]
+    assert set(manifest["output_sha256"]) == {
+        "thresholds.csv", "annual_maxima.csv", "fit_departures.csv",
+        "sensitivity_50yr.csv", "regional_10yr_24hr.npz", "settings_used.json"}
+    assert json.loads((results / "run_status.json").read_text())["status"] == "ok"
     assert json.loads((results / "settings_used.json").read_text()) == config
+    # Plotting verifies checksums and tolerates settings that do not affect extraction.
+    plot_outputs(config, results)
+    assert len(list((results / "figures").glob("*.png"))) == 6
+    relaxed = copy.deepcopy(config)
+    relaxed["comparison"].update(duration="48hr", return_period_years=50)
+    relaxed["execution"].update(workers=1, output_directory="elsewhere")
+    plot_outputs(relaxed, results)
+    changed = copy.deepcopy(config)
+    changed["towns"][0]["latitude"] += 0.1
+    with pytest.raises(ValueError, match="Observed-extraction settings differ"):
+        plot_outputs(changed, results)
+
+    # A successful rerun with a different map selection removes the stale map.
+    changed_map = copy.deepcopy(config)
+    changed_map["thresholds"].update(map_duration="48hr", map_return_period_years=2)
+    rainfall_thresholds.run_remote(changed_map, results)
+    assert (results / "regional_2yr_48hr.npz").exists()
+    assert not (results / "regional_10yr_24hr.npz").exists()
+    manifest = json.loads((results / "manifest.json").read_text())
+    assert manifest["extraction_sha256"] == extraction_hash(changed_map)
 
 
 def test_failed_remote_inspection_exports_report_only(stores, tmp_path, monkeypatch):
@@ -191,6 +240,58 @@ def test_failed_remote_inspection_exports_report_only(stores, tmp_path, monkeypa
     assert (tmp_path / "inspection.json").exists()
     assert (tmp_path / "coverage.csv").exists()
     assert not (tmp_path / "thresholds.csv").exists()
+    status = json.loads((tmp_path / "run_status.json").read_text())
+    assert status["status"] == "failed" and status["stage"] == "inspect"
+
+
+def test_failed_rerun_marks_status_and_blocks_plotting(stores, tmp_path, monkeypatch):
+    config, obs, fc = stores
+    monkeypatch.setattr(rainfall_thresholds, "open_store", lambda settings: (
+        obs if settings is config["cmorph_reference"] else fc, "synthetic-snapshot"))
+    rainfall_thresholds.run_remote(config, tmp_path)
+    assert (tmp_path / "thresholds.csv").exists()
+    assert json.loads((tmp_path / "run_status.json").read_text())["status"] == "ok"
+
+    def fail_extract(*args, **kwargs):
+        raise RuntimeError("simulated extraction failure")
+
+    monkeypatch.setattr(rainfall_thresholds, "extract_arrays", fail_extract)
+    with pytest.raises(RuntimeError, match="simulated extraction failure"):
+        rainfall_thresholds.run_remote(config, tmp_path)
+    status = json.loads((tmp_path / "run_status.json").read_text())
+    assert status["status"] == "failed" and status["stage"] == "extract"
+    # Old results are retained for diagnosis, but plotting must refuse them.
+    assert (tmp_path / "thresholds.csv").exists()
+    with pytest.raises(ValueError, match="Run status"):
+        plot_outputs(config, tmp_path)
+
+
+def test_verify_saved_settings_checks_snapshot_and_result_checksums(stores, tmp_path):
+    config, _, _ = stores
+    (tmp_path / "thresholds.csv").write_text("town,threshold_mm\nKhartoum,1\n")
+    manifest = {"extraction_sha256": extraction_hash(config),
+                "store_snapshots": {"cmorph": config["cmorph_reference"]["snapshot_id"]},
+                "output_sha256": {"thresholds.csv": file_sha256(tmp_path / "thresholds.csv")}}
+    write_json(tmp_path / "manifest.json", manifest)
+    verify_saved_settings(config, tmp_path)
+
+    wrong_snapshot = copy.deepcopy(manifest)
+    wrong_snapshot["store_snapshots"]["cmorph"] = "wrong-snapshot"
+    write_json(tmp_path / "manifest.json", wrong_snapshot)
+    with pytest.raises(ValueError, match="snapshot"):
+        verify_saved_settings(config, tmp_path)
+
+    write_json(tmp_path / "manifest.json", manifest)
+    (tmp_path / "thresholds.csv").write_text("town,threshold_mm\nKhartoum,2\n")
+    with pytest.raises(ValueError, match="does not match manifest"):
+        verify_saved_settings(config, tmp_path)
+
+
+def test_plot_refuses_noncomplete_run(stores, tmp_path):
+    config, _, _ = stores
+    write_status(tmp_path, "failed", stage="extract", error="boom")
+    with pytest.raises(ValueError, match="Run status"):
+        plot_outputs(config, tmp_path)
 
 
 def test_map_selection_and_workers_follow_shared_settings(stores, monkeypatch):

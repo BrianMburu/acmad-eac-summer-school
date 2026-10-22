@@ -1,8 +1,10 @@
 # Part A observed extreme rainfall thresholds for Sudan
 
 Status: required analysis and sensitivity extension completed locally on
-22 October 2026. Source and documentation are on `part-a-thresholds`, ready for
-group review before merging.
+22 October 2026. The Part A code was reviewed and corrected during branch
+unification; the corrected Part A and supplementary analyses share one code path
+on `erick`. The original review branch was `part-a-thresholds`. External group
+sign-off is still pending.
 
 ## Task description
 
@@ -32,6 +34,9 @@ single largest year.
 - [x] Generate five town figures and the regional 10-year 24-hour threshold map.
 - [x] Refit the full and leave-largest-out series using the same Gumbel MLE method.
 - [x] Record source revision, dataset snapshot IDs, settings and quality checks.
+- [x] Add staged/atomic outputs, run-status enforcement, snapshot checks and result checksums.
+- [x] Review the implementation during branch unification and share settings, data access,
+  validation and Gumbel helpers with the supplementary analysis.
 - [ ] Obtain the other subgroup's review before merging or publishing the handoff.
 
 The implementation adapts workshop E4 for CMORPH access, annual maxima,
@@ -40,15 +45,20 @@ and regional selection. The workshop examples remain read-only references.
 
 The analysis entry point is `scripts/rainfall_thresholds.py`. Shared settings and
 their validation are exposed through `scripts/common.py`; lazy data access is in
-`scripts/data_access.py`. Settings inspections and JSON exports use
-`uv run python -m scripts.common`. The common validator is independent of the
-observed-threshold requirements so other subgroups can reuse it.
+`scripts/data_access.py`, shared domain/unit checks are in `scripts/validation.py`,
+and Gumbel/plotting-position helpers are in `scripts/return_levels.py`. Settings
+inspections and JSON exports use `uv run python -m scripts.common`. The common
+validator is independent of the observed-threshold requirements so other subgroups
+can reuse it. The supplementary 27-year figures use the same modules through
+`scripts/cmorph_return_periods.py`.
 
 ## Completed run
 
 The live run used source commit `0ed75d3b39b3d49e58523bd5fac2ffb5a3e29118`
 with a clean working tree. Its CMORPH snapshot is `309ZYV7EMDMNPD0EDZK0`;
-the forecast-coordinate snapshot is `212QY6MDW3RZ7PWD7A2G`.
+the forecast-coordinate snapshot is `212QY6MDW3RZ7PWD7A2G`. The reviewed and
+unified pipeline was re-run against the same pinned snapshots and reproduced the
+30 thresholds, 270 annual maxima and 11,440 regional pixels documented below.
 
 Both variables explicitly report mm. All town values are finite and nonnegative,
 the return levels increase with return period, and all 11,440 pixels in the
@@ -121,9 +131,12 @@ shared reference levels.
 ## Results and handoff
 
 The existing local outputs are in `out/part_a_local`, and the complete result
-archive is `out/part_a_results.zip`. These generated files are ignored by Git;
-the numerical summary above preserves the findings in the committed task record.
-Use the CLI commands in [README.md](README.md) to reproduce the outputs.
+archive is `out/part_a_results.zip`. These generated files are ignored by Git and
+are not included in a fresh clone; the numerical summary above preserves the
+findings in the committed task record. Each successful run now writes a
+`run_status.json` marker and result checksums in `manifest.json`; plotting refuses
+failed or incomplete runs. Use the CLI commands in [README.md](README.md) to
+reproduce the outputs.
 
 For B/C, use `thresholds.csv`, filter to `duration == "24hr"`, and join on town
 and return period. Compare `threshold_mm` with forecast rainfall in mm over

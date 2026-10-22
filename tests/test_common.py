@@ -3,13 +3,21 @@
 import json
 import subprocess
 import sys
+from copy import deepcopy
 from types import SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
 
 from scripts.common import (
-    ROOT, ConfigError, load_config, validate_common, validate_thresholds,
+    ROOT,
+    ConfigError,
+    config_hash,
+    extraction_hash,
+    load_config,
+    slugify,
+    validate_common,
+    validate_thresholds,
 )
 
 
@@ -63,6 +71,38 @@ def test_town_names_are_unique_ignoring_case():
     config["towns"][1]["name"] = config["towns"][0]["name"].lower()
     with pytest.raises(ConfigError, match="unique"):
         validate_common(config)
+
+
+def test_town_names_must_produce_unique_file_slugs():
+    config = load_config()
+    config["towns"][1]["name"] = config["towns"][3]["name"].replace(" ", "-")
+    assert config["towns"][1]["name"].casefold() != config["towns"][3]["name"].casefold()
+    assert slugify(config["towns"][1]["name"]) == slugify(config["towns"][3]["name"])
+    with pytest.raises(ConfigError, match="unique file-name slugs"):
+        validate_common(config)
+
+
+def test_comparison_must_name_an_exported_threshold():
+    config = load_config()
+    config["comparison"]["duration"] = "7day"
+    config["comparison"]["return_period_years"] = 20
+    with pytest.raises(ConfigError, match="comparison.duration"):
+        validate_thresholds(config)
+    config["comparison"]["duration"] = "24hr"
+    with pytest.raises(ConfigError, match="comparison.return_period_years"):
+        validate_thresholds(config)
+
+
+def test_extraction_hash_ignores_forecast_and_output_settings():
+    config = load_config()
+    changed = deepcopy(config)
+    changed["forecast"]["start_dates"] = ["2025-06-01"]
+    changed["comparison"]["duration"] = "48hr"
+    changed["execution"]["output_directory"] = "somewhere/else"
+    assert config_hash(config) != config_hash(changed)
+    assert extraction_hash(config) == extraction_hash(changed)
+    changed["towns"][0]["latitude"] += 0.01
+    assert extraction_hash(config) != extraction_hash(changed)
 
 
 def test_threshold_rules_are_separate_from_shared_rules():
@@ -129,6 +169,7 @@ def test_json_load_errors_identify_file(tmp_path):
 def test_data_access_uses_selected_snapshot_or_branch(monkeypatch, pinned):
     import icechunk
     import xarray as xr
+
     from scripts.data_access import open_store
 
     settings = load_config()["cmorph_reference"]

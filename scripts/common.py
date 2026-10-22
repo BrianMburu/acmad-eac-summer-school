@@ -5,14 +5,17 @@ and performs no network access. Data helpers live in scripts/data_access.py.
 """
 
 import argparse
-from copy import deepcopy
-from datetime import date
+import hashlib
 import json
 import math
+import re
+from copy import deepcopy
+from datetime import date
 from pathlib import Path
 from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
+EXTRACTION_KEYS = ("region_extent", "towns", "cmorph_reference", "thresholds")
 
 # Geography: named bounds in degrees east/north (WGS84).
 COUNTRY = "Sudan"
@@ -132,6 +135,22 @@ def box_inside(domain, box):
     return inside(domain, box["south"], box["west"]) and inside(domain, box["north"], box["east"])
 
 
+def slugify(text):
+    """Lowercase file-name fragment with non-alphanumerics collapsed to underscores."""
+    return re.sub(r"[^a-z0-9]+", "_", str(text).lower()).strip("_")
+
+
+def config_hash(config):
+    """Stable hash of the full settings, for provenance and replay checks."""
+    return hashlib.sha256(json.dumps(config, sort_keys=True).encode()).hexdigest()
+
+
+def extraction_hash(config):
+    """Hash only the settings that determine the observed extraction."""
+    inputs = {key: config[key] for key in EXTRACTION_KEYS}
+    return hashlib.sha256(json.dumps(inputs, sort_keys=True).encode()).hexdigest()
+
+
 def _extent(box, path):
     _object(box, path, ("west", "east", "south", "north"))
     for key in ("west", "east", "south", "north"):
@@ -149,7 +168,7 @@ def _store(settings, path, extra):
     try:
         url = urlsplit(settings["endpoint"])
         host = url.hostname
-        url.port
+        _ = url.port
     except ValueError:
         raise ConfigError(f"{path}.endpoint: malformed HTTPS URL") from None
     if url.scheme != "https" or not host or url.username or url.password or url.query or url.fragment:
@@ -189,6 +208,9 @@ def validate_common(config, require_forecast_dates=False):
             raise ConfigError(f"{path}: town centre is outside its extent")
         if not box_inside(config["region_extent"], town["extent"]):
             raise ConfigError(f"{path}.extent: must lie entirely within region_extent")
+    slugs = [slugify(town["name"]) for town in config["towns"]]
+    if any(not slug for slug in slugs) or len(set(slugs)) != len(slugs):
+        raise ConfigError("towns: names must produce unique file-name slugs")
     start, end = _date(config["start_date"], "start_date"), _date(config["end_date"], "end_date")
     if start > end:
         raise ConfigError("start_date: must not be after end_date")
@@ -245,6 +267,11 @@ def validate_thresholds(config):
         raise ConfigError("thresholds.map_duration/map_return_period_years: must be among the selected levels")
     if settings["units_if_missing"] not in (None, "mm"):
         raise ConfigError("thresholds.units_if_missing: choose mm (E4 assumption) or null (require metadata)")
+    comparison = config["comparison"]
+    if comparison["duration"] not in durations:
+        raise ConfigError("comparison.duration: must be one of thresholds.durations")
+    if comparison["return_period_years"] not in periods:
+        raise ConfigError("comparison.return_period_years: must be one of thresholds.return_periods_years")
     ref = config["cmorph_reference"]
     if ref["reference_end_year"] - ref["reference_start_year"] < 3:
         raise ConfigError("cmorph_reference: threshold fitting requires at least four annual maxima")

@@ -5,46 +5,76 @@ Run with: uv run python -m scripts.rainfall_thresholds --help
 """
 
 import argparse
-from contextlib import ExitStack
 import hashlib
 import importlib.metadata
 import json
+import os
 import platform
 import subprocess
-from datetime import datetime, timezone
+import tempfile
+from contextlib import ExitStack
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import xarray as xr
 from scipy.stats import gumbel_r
 
 from scripts.common import (
-    ROOT, ConfigError, box_inside, inside, load_config, migrate_legacy, validate_common, validate_thresholds,
+    ROOT,
+    ConfigError,
+    box_inside,
+    config_hash,
+    extraction_hash,
+    inside,
+    load_config,
+    migrate_legacy,
+    slugify,
+    validate_common,
+    validate_thresholds,
 )
 from scripts.data_access import domain, open_store, town_indexers
+from scripts.return_levels import (
+    empirical_positions,
+    gumbel_reduced_variate,
+    gumbel_return_level,
+)
+from scripts.validation import units_report
 
 
 def write_json(path, value):
     path.write_text(json.dumps(value, indent=2, allow_nan=False) + "\n")
 
 
-def config_hash(config):
-    return hashlib.sha256(json.dumps(config, sort_keys=True).encode()).hexdigest()
+def file_sha256(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def units_report(array, config):
-    raw = array.attrs.get("units")
-    effective = raw or config["thresholds"].get("units_if_missing")
-    accepted = {"mm", "millimeter", "millimeters", "millimetre", "millimetres",
-                "kg m-2", "kg m^-2", "kg/m2", "kg m**-2"}
-    return {"source_units": raw, "effective_units": effective,
-            "accepted_as_mm_depth": str(effective).strip().lower() in accepted,
-            "used_workshop_fallback": not bool(raw)}
+def write_status(out, status, **extra):
+    write_json(out / "run_status.json",
+               {"status": status, "updated_utc": datetime.now(UTC).isoformat(), **extra})
+
+
+def require_complete_run(out):
+    """Refuse to plot a run that failed or never completed.
+
+    Runs produced before this marker existed have no run_status.json and remain
+    readable; the manifest checks still apply to them.
+    """
+    path = out / "run_status.json"
+    if not path.exists():
+        return
+    status = json.loads(path.read_text()).get("status")
+    if status != "ok":
+        raise ValueError(f"Run status is {status!r}, not 'ok'; re-run extract before plotting ({path})")
 
 
 def inspect_stores(obs, forecast, config):
-    """Read coordinates/metadata only. Report all problems before stopping."""
+    """Read coordinates/metadata only and collect the problems found.
+
+    Invalid coordinate order raises immediately from ``domain``; other missing
+    variables/levels/coverage are reported together in ``problems``.
+    """
     cm_domain = domain(obs, "lat", "lon", ascending=config["cmorph_reference"]["latitude_order"] == "ascending")
     fc_domain = domain(forecast, "latitude", "longitude", ascending=config["forecast"]["latitude_order"] == "ascending")
     ref = config["cmorph_reference"]
@@ -64,7 +94,7 @@ def inspect_stores(obs, forecast, config):
         if variable not in obs:
             problems.append(f"Missing CMORPH variable: {variable}")
             continue
-        units[variable] = units_report(obs[variable], config)
+        units[variable] = units_report(obs[variable], config["thresholds"].get("units_if_missing"))
         if not units[variable]["accepted_as_mm_depth"]:
             problems.append(f"Unsupported rainfall-depth units for {variable}: {units[variable]}")
     rows = []
@@ -160,14 +190,6 @@ def tables(points, config):
     return thresholds, maxima
 
 
-def empirical_positions(values):
-    values = np.asarray(values, dtype=float)
-    if values.ndim != 1 or not len(values) or not np.isfinite(values).all():
-        raise ValueError("Empirical positions require a finite, nonempty 1D series")
-    order = np.argsort(-values, kind="stable")
-    return order, (len(values) + 1) / np.arange(1, len(values) + 1)
-
-
 def diagnostics(thresholds, maxima):
     """Describe candidate departures; these are not formal fit-test rejections."""
     departures, sensitivity = [], []
@@ -179,9 +201,10 @@ def diagnostics(thresholds, maxima):
         order, periods = empirical_positions(values)
         # Gumbel levels are linear in the reduced variate. Top-three empirical
         # periods (28, 14, 9.33 years) lie within the stored 2–50-year range.
-        reduced = lambda t: -np.log(-np.log1p(-1 / np.asarray(t, dtype=float)))
         for rank, idx in enumerate(order[:3]):
-            expected = np.interp(reduced(periods[rank]), reduced(levels.return_period_years), levels.threshold_mm)
+            expected = np.interp(gumbel_reduced_variate(periods[rank]),
+                                 gumbel_reduced_variate(levels.return_period_years.to_numpy()),
+                                 levels.threshold_mm)
             departures.append({"town": town, "duration": duration, "rank": rank + 1,
                                "year": int(group.iloc[idx].year), "rainfall_mm": float(values[idx]),
                                "empirical_return_period_years": float(periods[rank]),
@@ -193,8 +216,8 @@ def diagnostics(thresholds, maxima):
             continue
         loc, scale = gumbel_r.fit(values)
         trim_loc, trim_scale = gumbel_r.fit(np.delete(values, order[0]))
-        full = float(gumbel_r.isf(1 / 50, loc=loc, scale=scale))
-        trimmed = float(gumbel_r.isf(1 / 50, loc=trim_loc, scale=trim_scale))
+        full = float(gumbel_return_level(loc, scale, 50))
+        trimmed = float(gumbel_return_level(trim_loc, trim_scale, 50))
         sensitivity.append({"town": town, "duration": duration, "status": "ok",
                             "method": "scipy.stats.gumbel_r maximum likelihood",
                             "removed_year": int(group.iloc[order[0]].year),
@@ -214,8 +237,9 @@ def provenance(config, snapshots):
                                            stderr=subprocess.DEVNULL).strip()
         except (OSError, subprocess.CalledProcessError):
             return "unavailable (not a Git checkout)"
-    return {"created_utc": datetime.now(timezone.utc).isoformat(),
-            "config_sha256": config_hash(config), "store_snapshots": snapshots,
+    return {"created_utc": datetime.now(UTC).isoformat(),
+            "config_sha256": config_hash(config), "extraction_sha256": extraction_hash(config),
+            "store_snapshots": snapshots,
             "git_commit": git("rev-parse", "HEAD"), "git_status": git("status", "--short"),
             "python": platform.python_version(),
             "packages": {p: importlib.metadata.version(p) for p in
@@ -233,57 +257,112 @@ def regional_map_name(config, suffix):
     return f"regional_{settings['map_return_period_years']}yr_{settings['map_duration']}.{suffix}"
 
 
+RESULT_PATTERNS = ("thresholds.csv", "annual_maxima.csv", "fit_departures.csv",
+                   "sensitivity_50yr.csv", "settings_used.json", "manifest.json",
+                   "regional_*.npz")
+
+
+def promote_results(staging, out):
+    """Atomically replace a previous run's results with the staged files.
+
+    The manifest is moved last. If anything fails, run_status.json stays
+    non-ok, so plotting refuses the possibly mixed directory.
+    """
+    produced = {path.name for path in staging.iterdir()}
+    for pattern in RESULT_PATTERNS:
+        for old in out.glob(pattern):
+            if old.name not in produced:
+                old.unlink()
+    for path in sorted(staging.iterdir(), key=lambda p: p.name == "manifest.json"):
+        os.replace(path, out / path.name)
+
+
 def run_remote(config, out, inspection_only=False):
     validate_common(config)
     validate_thresholds(config)
     out.mkdir(parents=True, exist_ok=True)
-    with ExitStack() as resources:
-        obs, obs_snapshot = open_store(config["cmorph_reference"])
-        resources.callback(obs.close)
-        forecast, fc_snapshot = open_store(config["forecast"])
-        resources.callback(forecast.close)
-        report, coverage = inspect_stores(obs, forecast, config)
-        report["config_sha256"] = config_hash(config)
-        report["store_snapshots"] = {"cmorph": obs_snapshot, "forecast": fc_snapshot}
-        write_json(out / "inspection.json", report)
-        coverage.to_csv(out / "coverage.csv", index=False)
-        print(json.dumps(report, indent=2))
-        print(coverage.to_string(index=False))
-        if report["problems"]:
-            raise ValueError("Inspection failed; review inspection.json and coverage.csv. "
-                             "Do not use any previous thresholds in this output directory.")
-        if inspection_only:
-            print("Inspection passed. Run the extract command next.")
-            return
-        points, regional = extract_arrays(obs, config)
-        quality = validate_arrays(points, regional, config)
-        thresholds, maxima = tables(points, config)
-        departures, sensitivity = diagnostics(thresholds, maxima)
-        thresholds.to_csv(out / "thresholds.csv", index=False)
-        maxima.to_csv(out / "annual_maxima.csv", index=False)
-        departures.to_csv(out / "fit_departures.csv", index=False)
-        sensitivity.to_csv(out / "sensitivity_50yr.csv", index=False)
-        np.savez_compressed(out / regional_map_name(config, "npz"), latitude=regional.lat.values,
-                            longitude=regional.lon.values, threshold_mm=regional.values)
-        write_json(out / "settings_used.json", config)
-        manifest = provenance(config, {"cmorph": obs_snapshot, "forecast": fc_snapshot})
-        manifest["quality_checks"] = quality
-        manifest["inspection"] = report
-        write_json(out / "manifest.json", manifest)
-        print(f"Extracted {len(thresholds)} thresholds and {len(maxima)} annual maxima to {out}")
+    write_status(out, "running", stage="inspect")
+    stage = "inspect"
+    try:
+        with ExitStack() as resources:
+            obs, obs_snapshot = open_store(config["cmorph_reference"])
+            resources.callback(obs.close)
+            forecast, fc_snapshot = open_store(config["forecast"])
+            resources.callback(forecast.close)
+            report, coverage = inspect_stores(obs, forecast, config)
+            report["config_sha256"] = config_hash(config)
+            report["extraction_sha256"] = extraction_hash(config)
+            report["store_snapshots"] = {"cmorph": obs_snapshot, "forecast": fc_snapshot}
+            write_json(out / "inspection.json", report)
+            coverage.to_csv(out / "coverage.csv", index=False)
+            print(json.dumps(report, indent=2))
+            print(coverage.to_string(index=False))
+            if report["problems"]:
+                raise ValueError("Inspection failed; review inspection.json and coverage.csv. "
+                                 "No new thresholds were written.")
+            if inspection_only:
+                write_status(out, "inspected", stage="inspect")
+                print("Inspection passed. Run the extract command next.")
+                return
+            stage = "extract"
+            write_status(out, "running", stage=stage)
+            # Stage every result, then promote it together. A failed run therefore
+            # cannot leave new tables beside an old manifest or map.
+            with tempfile.TemporaryDirectory(prefix=".extract-", dir=out) as tmp:
+                staging = Path(tmp)
+                points, regional = extract_arrays(obs, config)
+                quality = validate_arrays(points, regional, config)
+                thresholds, maxima = tables(points, config)
+                departures, sensitivity = diagnostics(thresholds, maxima)
+                thresholds.to_csv(staging / "thresholds.csv", index=False)
+                maxima.to_csv(staging / "annual_maxima.csv", index=False)
+                departures.to_csv(staging / "fit_departures.csv", index=False)
+                sensitivity.to_csv(staging / "sensitivity_50yr.csv", index=False)
+                map_name = regional_map_name(config, "npz")
+                np.savez_compressed(staging / map_name, latitude=regional.lat.values,
+                                    longitude=regional.lon.values, threshold_mm=regional.values)
+                write_json(staging / "settings_used.json", config)
+                manifest = provenance(config, {"cmorph": obs_snapshot, "forecast": fc_snapshot})
+                manifest["quality_checks"] = quality
+                manifest["inspection"] = report
+                manifest["output_sha256"] = {
+                    name: file_sha256(staging / name) for name in
+                    ["thresholds.csv", "annual_maxima.csv", "fit_departures.csv",
+                     "sensitivity_50yr.csv", map_name, "settings_used.json"]}
+                write_json(staging / "manifest.json", manifest)
+                promote_results(staging, out)
+            write_status(out, "ok", stage="complete")
+            print(f"Extracted {len(thresholds)} thresholds and {len(maxima)} annual maxima to {out}")
+    except Exception as exc:
+        write_status(out, "failed", stage=stage, error=str(exc))
+        raise
 
 
 def verify_saved_settings(config, out):
-    """Verify current or legacy settings against the recorded extraction hash."""
+    """Verify settings, snapshot and result checksums against the manifest."""
     manifest = json.loads((out / "manifest.json").read_text())
-    if manifest["config_sha256"] != config_hash(config):
-        # Older runs hashed their v1 JSON. Verify that original hash and require
-        # exact equality after migration, rather than discarding the hash check.
+    expected_extraction = manifest.get("extraction_sha256")
+    if expected_extraction is not None:
+        if expected_extraction != extraction_hash(config):
+            raise ValueError("Observed-extraction settings differ from the extracted data. "
+                             "Re-extract or use settings_used.json.")
+    elif manifest.get("config_sha256") != config_hash(config):
+        # Older runs hashed their full v1 JSON. Verify that original hash and
+        # require exact equality after migration, rather than dropping the check.
         saved_path = out / "settings_used.json"
         saved = json.loads(saved_path.read_text()) if saved_path.exists() else None
-        if (saved is None or manifest["config_sha256"] != config_hash(saved)
+        if (saved is None or manifest.get("config_sha256") != config_hash(saved)
                 or migrate_legacy(saved) != config):
             raise ValueError("Settings differ from the extracted data. Re-extract or use settings_used.json.")
+    expected_snapshot = config["cmorph_reference"]["snapshot_id"]
+    actual_snapshot = manifest.get("store_snapshots", {}).get("cmorph")
+    if expected_snapshot and actual_snapshot and expected_snapshot != actual_snapshot:
+        raise ValueError(f"Configured CMORPH snapshot {expected_snapshot} differs from extracted snapshot "
+                         f"{actual_snapshot}; re-extract with the current settings.")
+    for name, digest in manifest.get("output_sha256", {}).items():
+        path = out / name
+        if not path.exists() or file_sha256(path) != digest:
+            raise ValueError(f"Result file {name} is missing or does not match manifest.json; re-extract.")
 
 
 def plot_outputs(config, out):
@@ -292,12 +371,18 @@ def plot_outputs(config, out):
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
+    validate_common(config)
     validate_thresholds(config)
+    require_complete_run(out)
     verify_saved_settings(config, out)
     thresholds = pd.read_csv(out / "thresholds.csv")
     maxima = pd.read_csv(out / "annual_maxima.csv")
     figures = out / "figures"
-    figures.mkdir(exist_ok=True)
+    if figures.exists():
+        for old in figures.glob("*.png"):
+            old.unlink()
+    else:
+        figures.mkdir()
     for town in config["towns"]:
         fig, axes = plt.subplots(2, 2, figsize=(13, 9), squeeze=False)
         for row, duration in enumerate(config["thresholds"]["durations"]):
@@ -314,8 +399,9 @@ def plot_outputs(config, out):
             order, periods = empirical_positions(data.rainfall_mm)
             # Connect stored levels linearly in the Gumbel reduced variate.
             smooth_t = np.geomspace(2, 50, 150)
-            reduced = lambda t: -np.log(-np.log1p(-1 / np.asarray(t)))
-            curve = np.interp(reduced(smooth_t), reduced(levels.return_period_years.to_numpy()), levels.threshold_mm)
+            curve = np.interp(gumbel_reduced_variate(smooth_t),
+                              gumbel_reduced_variate(levels.return_period_years.to_numpy()),
+                              levels.threshold_mm)
             ax.semilogx(smooth_t, curve, color="crimson", label="Stored Gumbel levels (2–50 years)")
             ax.scatter(levels.return_period_years, levels.threshold_mm, color="crimson")
             sorted_values = data.rainfall_mm.to_numpy()[order]
@@ -330,7 +416,7 @@ def plot_outputs(config, out):
         fig.suptitle(f"{town['name']}: CMORPH annual maxima, {ref['reference_start_year']}–{ref['reference_end_year']}\n"
                      f"Nearest town-centre pixel; 50-year levels extrapolate beyond {years} years")
         fig.tight_layout()
-        fig.savefig(figures / f"{town['name'].lower().replace(' ', '_')}_return_levels.png", dpi=150)
+        fig.savefig(figures / f"{slugify(town['name'])}_return_levels.png", dpi=150)
         plt.close(fig)
     duration = config["thresholds"]["map_duration"]
     period = config["thresholds"]["map_return_period_years"]

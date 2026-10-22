@@ -1,104 +1,137 @@
-"""Exercise 4: explore 27 years of observed rainfall extremes (CMORPH, 1998-2024) for East Africa.
+"""Supplementary 27-year CMORPH return-period figures for the shared town list.
 
-The store holds annual maxima and Gumbel return-period depths that were computed from a pencil-chunked
-copy of 236,688 CMORPH files (all 27 years at each grid point in one chunk). This store itself is
-pan-chunked (one map per chunk), so maps are cheap and a 27-year point series costs 27 fetches.
+This uses the same settings, pinned CMORPH snapshot and Gumbel helpers as the
+Part A threshold analysis. ``grid.json`` is the generated export of the shared
+settings in ``scripts/common.py``; either can be supplied with ``--config``.
+One three-panel figure is written per town.
 
-Every town listed in grid.json (name, latitude, longitude) gets its own three-panel figure, e.g.
-Sudan's five towns produce five plots under out/.
-
-Run:  uv run --project ../python-workshop python scripts/cmorph_return_periods.py
+Run:  uv run python -m scripts.cmorph_return_periods
 """
+
 import argparse
 import json
-import os
-import pathlib
-import re
 import time
+from datetime import UTC, datetime
+from pathlib import Path
 
-# Stray AWS_* variables silently redirect the open; the store is public, so drop them first.
-for k in [k for k in os.environ if k.startswith("AWS_")]:
-    os.environ.pop(k)
-
-import icechunk
 import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
-import xarray as xr
 
-ENDPOINT = "https://data.source.coop"
-BUCKET = "e4drr-project"
-PREFIX = "observations/cmorph_rp_icechunk"
-DURATION = "24hr"
-RETURN_PERIOD = 27                       # years; computed from Gumbel mu/beta when not stored
-HERE = pathlib.Path(__file__).resolve()
-DEFAULT_GRID = HERE.parents[2] / "acmad-eac-summer-school" / "grid.json"
-out = pathlib.Path("out")
-out.mkdir(parents=True, exist_ok=True)
+from scripts.common import (
+    ROOT,
+    ConfigError,
+    config_hash,
+    load_config,
+    slugify,
+    validate_common,
+    validate_thresholds,
+)
+from scripts.data_access import open_store, town_indexers
+from scripts.return_levels import empirical_positions, gumbel_return_level
+from scripts.validation import check_town_coverage, units_report
 
-
-def slugify(text):
-    """Turn a town name into a safe file-name fragment."""
-    return re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")
-
-
-def nearest_point(da, lat, lon):
-    """Nearest grid point; select each axis separately so the 1-D indexes stay well behaved."""
-    return da.sel(lat=lat, method="nearest").sel(lon=lon, method="nearest")
+DEFAULT_RETURN_PERIOD = 27
+OUTPUT_DIRECTORY = ROOT / "out"
 
 
-def gumbel_return_level(location, scale, return_period):
-    """Gumbel quantile x_T = mu - beta * ln(-ln(1 - 1/T)); mu and beta come from the store."""
-    return location - scale * np.log(-np.log1p(-1.0 / return_period))
+def read_points(ds, config, duration):
+    """Read every town in one graph: annual maxima, stored levels, mu and beta."""
+    ref = config["cmorph_reference"]
+    variables = [ref["annual_maxima_variable"], ref["variable"], "dist_location", "dist_scale"]
+    return (ds[variables].sel(duration=duration)
+            .sel(**town_indexers(config), method="nearest").compute())
 
 
-def plot_town(ds, rp_map, town, country):
-    """Read the 27-year point series for one town and save its three-panel figure."""
-    NAME = town["name"]
-    LAT = float(town["latitude"])
-    LON = float(town["longitude"])
+def check_parameters(points, config):
+    """Check that the stored mu/beta reproduce every stored return level."""
+    ref = config["cmorph_reference"]
+    stored = points[ref["variable"]]
+    computed = gumbel_return_level(points["dist_location"], points["dist_scale"], stored.return_period)
+    difference_values = np.abs(computed - stored).values
+    if not np.isfinite(difference_values).all():
+        raise ValueError("nonfinite Gumbel parameters or stored return levels")
+    difference = float(difference_values.max())
+    if difference > 0.01:
+        raise ValueError(
+            f"Gumbel mu/beta do not reproduce the stored return levels (max difference {difference:.3f} mm)")
+    return difference
 
-    # Point series read: one duration, every year -> one chunk per year.
-    t0 = time.time()
-    amax = nearest_point(ds["annual_maxima"].sel(duration=DURATION), LAT, LON).compute()
-    rp_point = nearest_point(ds["return_period_precip"].sel(duration=DURATION), LAT, LON).compute()
-    mu = nearest_point(ds["dist_location"].sel(duration=DURATION), LAT, LON).compute()
-    beta = nearest_point(ds["dist_scale"].sel(duration=DURATION), LAT, LON).compute()
-    rp_value = float(gumbel_return_level(mu, beta, RETURN_PERIOD))
-    print(f"[{NAME}] series read ({ds.sizes['year']} annual maxima): {time.time() - t0:.1f}s, "
-          f"{ds.sizes['year']} chunks")
+
+def validate_store(ds, config, duration):
+    """Validate record, units, levels and town coverage before selecting points."""
+    ref = config["cmorph_reference"]
+    expected_years = list(range(ref["reference_start_year"], ref["reference_end_year"] + 1))
+    years = ds.year.values.tolist()
+    if years != expected_years:
+        raise ValueError(f"expected exactly the years {expected_years[0]}-{expected_years[-1]}; got {years}")
+    if duration not in ds.duration.values:
+        raise ValueError(f"duration {duration!r} not available; choose from {ds.duration.values.tolist()}")
+    missing = set(config["thresholds"]["return_periods_years"]) - set(ds.return_period.values.tolist())
+    if missing:
+        raise ValueError(f"stored return periods are missing {sorted(missing)}")
+    for variable in ("dist_location", "dist_scale"):
+        if variable not in ds:
+            raise ValueError(f"missing Gumbel parameter variable: {variable}")
+    units = {}
+    for variable in (ref["annual_maxima_variable"], ref["variable"]):
+        if variable not in ds:
+            raise ValueError(f"missing CMORPH variable: {variable}")
+        units[variable] = units_report(ds[variable], config["thresholds"].get("units_if_missing"))
+        if not units[variable]["accepted_as_mm_depth"]:
+            raise ValueError(f"unsupported rainfall-depth units for {variable}: {units[variable]}")
+    domain_box = check_town_coverage(ds, config)
+    return domain_box, units
+
+
+def plot_town(points, rp_map, town, config, duration, return_period, out):
+    """Save the three-panel figure for one town."""
+    ref = config["cmorph_reference"]
+    name = town["name"]
+    amax = points[ref["annual_maxima_variable"]].sel(town=name)
+    rp_point = points[ref["variable"]].sel(town=name)
+    mu = float(points["dist_location"].sel(town=name))
+    beta = float(points["dist_scale"].sel(town=name))
+    rp_value = float(gumbel_return_level(mu, beta, return_period))
 
     vals = amax.values
-    assert np.isfinite(vals).all(), f"NaN in annual maxima at {NAME}: check the point is inside the domain"
-    print(f"[{NAME}] nearest pixel ({float(amax.lat):.2f}, {float(amax.lon):.2f}); "
+    if not np.isfinite(vals).all():
+        raise ValueError(f"NaN in annual maxima at {name}: check the point is inside the domain")
+    print(f"[{name}] nearest pixel ({float(amax.lat):.2f}, {float(amax.lon):.2f}); "
           f"annual max: median {np.median(vals):.0f} mm, wettest {vals.max():.0f} mm "
           f"in {int(amax.year[vals.argmax()])}")
-    print(f"[{NAME}] {RETURN_PERIOD}-yr {DURATION} return level: {rp_value:.1f} mm "
-          f"(mu={float(mu):.1f}, beta={float(beta):.1f})")
-    print(f"[{NAME}] stored return levels (mm):",
+    print(f"[{name}] {return_period:g}-yr {duration} return level: {rp_value:.1f} mm "
+          f"(mu={mu:.1f}, beta={beta:.1f})")
+    print(f"[{name}] stored return levels (mm):",
           dict(zip(rp_point.return_period.values.tolist(), np.round(rp_point.values, 1).tolist())))
 
-    # Sanity check: the empirical exceedance of the 27 maxima should sit near the fitted Gumbel curve.
-    sorted_vals = np.sort(vals)[::-1]
-    empirical_T = (len(vals) + 1) / np.arange(1, len(vals) + 1)        # Weibull plotting position
+    # Empirical exceedance of the annual maxima should sit near the fitted Gumbel curve.
+    order, empirical_T = empirical_positions(vals)
+    sorted_vals = vals[order]
 
-    fig, axes = plt.subplots(1, 3, figsize=(16, 4.8), gridspec_kw=dict(width_ratios=[1, 1.15, 1]))
+    fig, axes = plt.subplots(1, 3, figsize=(16, 4.8),
+                             gridspec_kw={"width_ratios": [1, 1.15, 1]})
     ax = axes[0]
     pm = ax.pcolormesh(rp_map.lon, rp_map.lat, rp_map, cmap="YlGnBu", shading="auto",
                        vmax=float(rp_map.quantile(0.99)))
     fig.colorbar(pm, ax=ax, label="mm")
-    ax.plot(LON, LAT, "r^", ms=8, label=NAME)
-    ax.set(title=f"{RETURN_PERIOD}-year {DURATION} rainfall (Gumbel)", xlabel="lon", ylabel="lat")
+    ax.plot(town["longitude"], town["latitude"], "r^", ms=8, label=name)
+    ax.set(title=f"{return_period:g}-year {duration} rainfall (Gumbel)", xlabel="lon", ylabel="lat")
     ax.set_aspect("equal")
     ax.legend(loc="lower left")
 
     ax = axes[1]
     ax.bar(amax.year, vals, color="steelblue")
-    for T, c in [(2, "grey"), (10, "darkorange"), (50, "crimson")]:
-        ax.axhline(float(rp_point.sel(return_period=T)), color=c, ls="--", lw=1.5, label=f"{T}-yr level")
-    ax.set(title=f"{NAME}: annual max {DURATION} rainfall, 1998-2024", xlabel="year", ylabel="mm")
+    for period, colour in zip(config["thresholds"]["return_periods_years"],
+                              ["grey", "darkorange", "crimson"]):
+        if period in rp_point.return_period.values:
+            ax.axhline(float(rp_point.sel(return_period=period)), color=colour, ls="--", lw=1.5,
+                       label=f"{period}-yr level")
+    ax.set(title=f"{name}: annual max {duration} rainfall, "
+                 f"{ref['reference_start_year']}-{ref['reference_end_year']}",
+           xlabel="year", ylabel="mm")
     ax.legend()
     ax.grid(axis="y", alpha=0.3)
 
@@ -106,13 +139,14 @@ def plot_town(ds, rp_map, town, country):
     ax.semilogx(rp_point.return_period, rp_point, "o-", color="crimson", label="Gumbel fit")
     ax.semilogx(empirical_T, sorted_vals, "k.", label="observed annual maxima")
     ax.set(title="Does the fit match the data?", xlabel="return period (years)",
-           ylabel=f"{DURATION} rainfall (mm)")
+           ylabel=f"{duration} rainfall (mm)")
     ax.legend()
     ax.grid(alpha=0.3, which="both")
-    fig.suptitle(f"CMORPH 1998-2024, {country}: observed rainfall extremes at {NAME}")
+    fig.suptitle(f"CMORPH {ref['reference_start_year']}-{ref['reference_end_year']}, "
+                 f"{config['country']}: observed rainfall extremes at {name}")
     fig.tight_layout()
 
-    path = out / f"04_cmorph_return_periods_{slugify(NAME)}.png"
+    path = out / f"04_cmorph_return_periods_{slugify(name)}.png"
     fig.savefig(path, dpi=120)
     plt.close(fig)
     print("saved", path)
@@ -120,48 +154,71 @@ def plot_town(ds, rp_map, town, country):
 
 
 def main():
-    default_grid = DEFAULT_GRID if DEFAULT_GRID.exists() else pathlib.Path("grid.json")
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--grid", type=pathlib.Path, default=default_grid,
-                        help=f"JSON file listing towns (default: {default_grid})")
+    parser.add_argument("--config", "--grid", dest="config", type=Path,
+                        help="JSON settings override or grid.json export; defaults to scripts/common.py")
+    parser.add_argument("--duration", help="duration to plot; defaults to thresholds.map_duration")
+    parser.add_argument("--return-period", type=float, default=DEFAULT_RETURN_PERIOD,
+                        help=f"return period in years (default: {DEFAULT_RETURN_PERIOD})")
+    parser.add_argument("--out", type=Path, default=OUTPUT_DIRECTORY,
+                        help=f"output directory (default: {OUTPUT_DIRECTORY})")
     args = parser.parse_args()
+    try:
+        config = load_config(args.config)
+        validate_common(config)
+        validate_thresholds(config)
+    except ConfigError as exc:
+        parser.error(str(exc))
+    if not np.isfinite(args.return_period) or args.return_period <= 1:
+        parser.error("--return-period must be a finite number greater than 1 year")
+    duration = args.duration or config["thresholds"]["map_duration"]
+    out = args.out
+    out.mkdir(parents=True, exist_ok=True)
 
-    meta = json.loads(args.grid.read_text())
-    towns = meta["towns"]
-    country = meta.get("country", "East Africa")
-    print(f"{len(towns)} towns from {args.grid}: {[t['name'] for t in towns]}")
+    ref = config["cmorph_reference"]
+    ds, snapshot = open_store(ref)
+    try:
+        try:
+            domain_box, units = validate_store(ds, config, duration)
+        except ValueError as exc:
+            parser.error(str(exc))
+        print(f"CMORPH snapshot {snapshot}; duration {duration}; return period {args.return_period:g} years")
+        print("dims:", dict(ds.sizes))
+        print("durations:", ds.duration.values.tolist(), "| return periods:", ds.return_period.values.tolist())
+        print(f"domain: {domain_box}; units: { {k: v['effective_units'] for k, v in units.items()} }")
+        print(f"latitude runs {float(ds.lat[0]):.1f} -> {float(ds.lat[-1]):.1f}")
 
-    storage = icechunk.s3_storage(
-        bucket=BUCKET, prefix=PREFIX, endpoint_url=ENDPOINT, region="us-east-1",
-        anonymous=True, from_env=False, force_path_style=True)
-    repo = icechunk.Repository.open(storage, config=icechunk.RepositoryConfig.default())
-    ds = xr.open_zarr(repo.readonly_session("main").store, zarr_format=3, consolidated=False, chunks={})
-
-    print("dims:", dict(ds.sizes))
-    print("variables:", list(ds.data_vars))
-    print("durations:", ds.duration.values.tolist(), "| return periods:", ds.return_period.values.tolist())
-    print(f"latitude runs {float(ds.lat[0]):.1f} -> {float(ds.lat[-1]):.1f} "
-          f"(ASCENDING here, unlike the forecast store)")
-    for v in ds.data_vars:
-        print(f"  {v}: chunks {ds[v].encoding['chunks']}")
-
-    available = ds.return_period.values.tolist()
-    if RETURN_PERIOD in available:
-        # Map read: one duration -> one chunk, shared by every town.
         t0 = time.time()
-        rp_map = ds["return_period_precip"].sel(duration=DURATION, return_period=RETURN_PERIOD).compute()
-        print(f"map read ({DURATION}, {RETURN_PERIOD}-yr): {time.time() - t0:.1f}s, 1 chunk")
-    else:
-        # Arbitrary return period: evaluate the fitted Gumbel quantile from mu and beta.
-        t0 = time.time()
-        mu_map = ds["dist_location"].sel(duration=DURATION)
-        beta_map = ds["dist_scale"].sel(duration=DURATION)
-        rp_map = gumbel_return_level(mu_map, beta_map, RETURN_PERIOD).compute()
-        print(f"map computed ({DURATION}, {RETURN_PERIOD}-yr from mu/beta, "
-              f"not stored): {time.time() - t0:.1f}s, 2 chunks")
+        rp_map = gumbel_return_level(
+            ds["dist_location"].sel(duration=duration),
+            ds["dist_scale"].sel(duration=duration),
+            args.return_period,
+        ).compute()
+        if not np.isfinite(rp_map.values).any():
+            parser.error("the Gumbel parameter map contains no finite values")
+        print(f"map computed ({duration}, {args.return_period:g}-yr from mu/beta): "
+              f"{time.time() - t0:.1f}s, 2 chunks")
 
-    for town in towns:
-        plot_town(ds, rp_map, town, country)
+        t0 = time.time()
+        points = read_points(ds, config, duration)
+        print(f"point reads for {len(config['towns'])} towns: {time.time() - t0:.1f}s")
+        difference = check_parameters(points, config)
+        print(f"Gumbel parameter check: stored levels reproduced within {difference:.2e} mm")
+
+        paths = [plot_town(points, rp_map, town, config, duration, args.return_period, out)
+                 for town in config["towns"]]
+        manifest = {"created_utc": datetime.now(UTC).isoformat(),
+                    "config_sha256": config_hash(config), "snapshot": snapshot,
+                    "duration": duration, "return_period_years": args.return_period,
+                    "reference_start_year": ref["reference_start_year"],
+                    "reference_end_year": ref["reference_end_year"],
+                    "units": units, "gumbel_parameter_max_difference_mm": difference,
+                    "files": [path.name for path in paths]}
+        manifest_path = out / "04_cmorph_return_periods_manifest.json"
+        manifest_path.write_text(json.dumps(manifest, indent=2, allow_nan=False) + "\n")
+        print("saved", manifest_path)
+    finally:
+        ds.close()
 
 
 if __name__ == "__main__":
