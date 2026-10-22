@@ -1,1 +1,1 @@
-"""Reproducible local analysis for Part A of the Sudan rainfall project."""
+"""Shared settings and reproducible analysis for the Sudan rainfall project."""

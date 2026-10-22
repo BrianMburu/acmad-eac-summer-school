@@ -1,10 +1,11 @@
-"""CMORPH Part A, adapted from workshop E4 with E6 coverage checks.
+"""Observed rainfall thresholds from CMORPH, adapted from workshop E4/E6.
 
 Stages: inspect (metadata/coordinates), extract (remote data), plots (offline).
-Run with: uv run python -m scripts.part_a_thresholds --help
+Run with: uv run python -m scripts.rainfall_thresholds --help
 """
 
 import argparse
+from contextlib import ExitStack
 import hashlib
 import importlib.metadata
 import json
@@ -19,8 +20,9 @@ import xarray as xr
 from scipy.stats import gumbel_r
 
 from scripts.common import (
-    ROOT, box_inside, domain, inside, load_config, open_store, town_indexers,
+    ROOT, ConfigError, box_inside, inside, load_config, migrate_legacy, validate_common, validate_thresholds,
 )
+from scripts.data_access import domain, open_store, town_indexers
 
 
 def write_json(path, value):
@@ -33,7 +35,7 @@ def config_hash(config):
 
 def units_report(array, config):
     raw = array.attrs.get("units")
-    effective = raw or config["part_a"].get("units_if_missing")
+    effective = raw or config["thresholds"].get("units_if_missing")
     accepted = {"mm", "millimeter", "millimeters", "millimetre", "millimetres",
                 "kg m-2", "kg m^-2", "kg/m2", "kg m**-2"}
     return {"source_units": raw, "effective_units": effective,
@@ -43,17 +45,17 @@ def units_report(array, config):
 
 def inspect_stores(obs, forecast, config):
     """Read coordinates/metadata only. Report all problems before stopping."""
-    cm_domain = domain(obs, "lat", "lon", ascending=True)
-    fc_domain = domain(forecast, "latitude", "longitude", ascending=False)
+    cm_domain = domain(obs, "lat", "lon", ascending=config["cmorph_reference"]["latitude_order"] == "ascending")
+    fc_domain = domain(forecast, "latitude", "longitude", ascending=config["forecast"]["latitude_order"] == "ascending")
     ref = config["cmorph_reference"]
     expected_years = list(range(ref["reference_start_year"], ref["reference_end_year"] + 1))
     durations = obs.duration.values.tolist()
     periods = obs.return_period.values.tolist()
     years = obs.year.values.tolist()
     problems = []
-    if not set(config["part_a"]["durations"]) <= set(durations):
+    if not set(config["thresholds"]["durations"]) <= set(durations):
         problems.append(f"Requested durations unavailable; available durations: {durations}")
-    if not set(config["part_a"]["return_periods_years"]) <= set(periods):
+    if not set(config["thresholds"]["return_periods_years"]) <= set(periods):
         problems.append(f"Requested return periods unavailable; available values: {periods}")
     if sorted(years) != expected_years:
         problems.append(f"Expected exactly the years {expected_years[0]}–{expected_years[-1]}; got {years}")
@@ -97,7 +99,7 @@ def inspect_stores(obs, forecast, config):
 
 
 def extract_arrays(obs, config):
-    ref, settings = config["cmorph_reference"], config["part_a"]
+    ref, settings = config["cmorph_reference"], config["thresholds"]
     indexers = town_indexers(config)
     # Combine all town/duration reads in one graph, sharing map-chunk fetches.
     points = obs[[ref["variable"], ref["annual_maxima_variable"]]].sel(
@@ -105,11 +107,15 @@ def extract_arrays(obs, config):
     ).sel(**indexers, method="nearest").sel(
         year=slice(ref["reference_start_year"], ref["reference_end_year"]))
     box = config["region_extent"]
-    regional = obs[ref["variable"]].sel(duration="24hr", return_period=10).sel(
-        lat=slice(box["south"], box["north"]), lon=slice(box["west"], box["east"]))
+    lat_bounds = ((box["south"], box["north"]) if ref["latitude_order"] == "ascending"
+                  else (box["north"], box["south"]))
+    regional = obs[ref["variable"]].sel(duration=settings["map_duration"],
+                                       return_period=settings["map_return_period_years"]).sel(
+        lat=slice(*lat_bounds), lon=slice(box["west"], box["east"]))
     # Include the map in the same compute: its source chunk can also serve town reads.
     import dask
-    points, regional = dask.compute(points, regional, scheduler="threads", num_workers=2)
+    points, regional = dask.compute(points, regional, scheduler="threads",
+                                    num_workers=config["execution"]["workers"])
     return points, regional
 
 
@@ -207,7 +213,7 @@ def provenance(config, snapshots):
             return subprocess.check_output(["git", *args], cwd=ROOT, text=True,
                                            stderr=subprocess.DEVNULL).strip()
         except (OSError, subprocess.CalledProcessError):
-            return "unavailable (uploaded source bundle)"
+            return "unavailable (not a Git checkout)"
     return {"created_utc": datetime.now(timezone.utc).isoformat(),
             "config_sha256": config_hash(config), "store_snapshots": snapshots,
             "git_commit": git("rev-parse", "HEAD"), "git_status": git("status", "--short"),
@@ -222,11 +228,20 @@ def provenance(config, snapshots):
             "sensitivity_note": "Leave-largest-out uses the same MLE method for both refits. Stored fit method may differ. Tied maxima: remove earliest year only."}
 
 
+def regional_map_name(config, suffix):
+    settings = config["thresholds"]
+    return f"regional_{settings['map_return_period_years']}yr_{settings['map_duration']}.{suffix}"
+
+
 def run_remote(config, out, inspection_only=False):
+    validate_common(config)
+    validate_thresholds(config)
     out.mkdir(parents=True, exist_ok=True)
-    obs, obs_snapshot = open_store(config["cmorph_reference"])
-    forecast, fc_snapshot = open_store(config["forecast"])
-    try:
+    with ExitStack() as resources:
+        obs, obs_snapshot = open_store(config["cmorph_reference"])
+        resources.callback(obs.close)
+        forecast, fc_snapshot = open_store(config["forecast"])
+        resources.callback(forecast.close)
         report, coverage = inspect_stores(obs, forecast, config)
         report["config_sha256"] = config_hash(config)
         report["store_snapshots"] = {"cmorph": obs_snapshot, "forecast": fc_snapshot}
@@ -238,7 +253,7 @@ def run_remote(config, out, inspection_only=False):
             raise ValueError("Inspection failed; review inspection.json and coverage.csv. "
                              "Do not use any previous thresholds in this output directory.")
         if inspection_only:
-            print("Inspection passed. Run the extraction cell next.")
+            print("Inspection passed. Run the extract command next.")
             return
         points, regional = extract_arrays(obs, config)
         quality = validate_arrays(points, regional, config)
@@ -248,7 +263,7 @@ def run_remote(config, out, inspection_only=False):
         maxima.to_csv(out / "annual_maxima.csv", index=False)
         departures.to_csv(out / "fit_departures.csv", index=False)
         sensitivity.to_csv(out / "sensitivity_50yr.csv", index=False)
-        np.savez_compressed(out / "regional_10yr_24hr.npz", latitude=regional.lat.values,
+        np.savez_compressed(out / regional_map_name(config, "npz"), latitude=regional.lat.values,
                             longitude=regional.lon.values, threshold_mm=regional.values)
         write_json(out / "settings_used.json", config)
         manifest = provenance(config, {"cmorph": obs_snapshot, "forecast": fc_snapshot})
@@ -256,9 +271,19 @@ def run_remote(config, out, inspection_only=False):
         manifest["inspection"] = report
         write_json(out / "manifest.json", manifest)
         print(f"Extracted {len(thresholds)} thresholds and {len(maxima)} annual maxima to {out}")
-    finally:
-        obs.close()
-        forecast.close()
+
+
+def verify_saved_settings(config, out):
+    """Verify current or legacy settings against the recorded extraction hash."""
+    manifest = json.loads((out / "manifest.json").read_text())
+    if manifest["config_sha256"] != config_hash(config):
+        # Older runs hashed their v1 JSON. Verify that original hash and require
+        # exact equality after migration, rather than discarding the hash check.
+        saved_path = out / "settings_used.json"
+        saved = json.loads(saved_path.read_text()) if saved_path.exists() else None
+        if (saved is None or manifest["config_sha256"] != config_hash(saved)
+                or migrate_legacy(saved) != config):
+            raise ValueError("Settings differ from the extracted data. Re-extract or use settings_used.json.")
 
 
 def plot_outputs(config, out):
@@ -267,16 +292,15 @@ def plot_outputs(config, out):
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    manifest = json.loads((out / "manifest.json").read_text())
-    if manifest["config_sha256"] != config_hash(config):
-        raise ValueError("Settings differ from the extracted data. Re-extract or use settings_used.json.")
+    validate_thresholds(config)
+    verify_saved_settings(config, out)
     thresholds = pd.read_csv(out / "thresholds.csv")
     maxima = pd.read_csv(out / "annual_maxima.csv")
     figures = out / "figures"
     figures.mkdir(exist_ok=True)
     for town in config["towns"]:
         fig, axes = plt.subplots(2, 2, figsize=(13, 9), squeeze=False)
-        for row, duration in enumerate(config["part_a"]["durations"]):
+        for row, duration in enumerate(config["thresholds"]["durations"]):
             data = maxima[(maxima.town == town["name"]) & (maxima.duration == duration)].sort_values("year")
             levels = thresholds[(thresholds.town == town["name"]) & (thresholds.duration == duration)].sort_values("return_period_years")
             ax = axes[row, 0]
@@ -301,15 +325,20 @@ def plot_outputs(config, out):
             ax.set(title=f"{duration}: fit versus observations", xlabel="Return period (years)", ylabel=f"Rainfall depth (mm / {duration})")
             ax.legend(fontsize=8)
             ax.grid(alpha=.3, which="both")
-        fig.suptitle(f"{town['name']}: CMORPH annual maxima, 1998–2024\nNearest town-centre pixel; 50-year levels extrapolate beyond 27 years")
+        ref = config["cmorph_reference"]
+        years = ref["reference_end_year"] - ref["reference_start_year"] + 1
+        fig.suptitle(f"{town['name']}: CMORPH annual maxima, {ref['reference_start_year']}–{ref['reference_end_year']}\n"
+                     f"Nearest town-centre pixel; 50-year levels extrapolate beyond {years} years")
         fig.tight_layout()
         fig.savefig(figures / f"{town['name'].lower().replace(' ', '_')}_return_levels.png", dpi=150)
         plt.close(fig)
-    with np.load(out / "regional_10yr_24hr.npz") as grid:
+    duration = config["thresholds"]["map_duration"]
+    period = config["thresholds"]["map_return_period_years"]
+    with np.load(out / regional_map_name(config, "npz")) as grid:
         fig, ax = plt.subplots(figsize=(12, 6))
         mesh = ax.pcolormesh(grid["longitude"], grid["latitude"], np.ma.masked_invalid(grid["threshold_mm"]),
                              shading="auto", cmap="YlGnBu")
-        fig.colorbar(mesh, ax=ax, label="10-year rainfall depth (mm in 24 hours)")
+        fig.colorbar(mesh, ax=ax, label=f"{period}-year rainfall depth (mm over {duration})")
     for town in config["towns"]:
         ax.plot(town["longitude"], town["latitude"], "r^", markersize=6)
         near_east = town["longitude"] > config["region_extent"]["east"] - 1
@@ -318,25 +347,31 @@ def plot_outputs(config, out):
                     ha="right" if near_east else "left")
     box = config["region_extent"]
     ax.set(xlim=(box["west"], box["east"]), ylim=(box["south"], box["north"]),
-           title="CMORPH 1998–2024: 10-year, 24-hour rainfall level\nSudan study box (box also includes neighbouring areas)",
+           title=f"CMORPH {ref['reference_start_year']}–{ref['reference_end_year']}: {period}-year, {duration} rainfall level\n"
+                 f"{config['country']} study box (box also includes neighbouring areas)",
            xlabel="Longitude (°E)", ylabel="Latitude (°N)", aspect="equal")
     fig.tight_layout()
-    fig.savefig(figures / "regional_10yr_24hr.png", dpi=150)
+    fig.savefig(figures / regional_map_name(config, "png"), dpi=150)
     plt.close(fig)
-    print(f"Saved five town figures and one regional map in {figures}")
+    print(f"Saved {len(config['towns'])} town figures and one regional map in {figures}")
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("stage", choices=["inspect", "extract", "plots"])
-    parser.add_argument("--config", type=Path, default=ROOT / "grid.json")
-    parser.add_argument("--out", type=Path, default=ROOT / "out" / "part_a")
+    parser.add_argument("--config", type=Path, help="optional JSON override or saved settings; defaults to scripts/common.py")
+    parser.add_argument("--out", type=Path, help="output directory; defaults to execution.output_directory")
     args = parser.parse_args()
-    config = load_config(args.config)
+    try:
+        config = load_config(args.config)
+        validate_thresholds(config)
+    except ConfigError as exc:
+        parser.error(str(exc))
+    out = args.out or ROOT / config["execution"]["output_directory"]
     if args.stage == "plots":
-        plot_outputs(config, args.out)
+        plot_outputs(config, out)
     else:
-        run_remote(config, args.out, inspection_only=args.stage == "inspect")
+        run_remote(config, out, inspection_only=args.stage == "inspect")
 
 
 if __name__ == "__main__":

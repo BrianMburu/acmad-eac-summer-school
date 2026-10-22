@@ -1,7 +1,7 @@
 [project]
 name = "acmad-sudan-extremes"
 version = "0.1.0"
-description = "Part A: CMORPH rainfall thresholds for five Sudanese towns"
+description = "Observed rainfall thresholds for five Sudanese towns"
 requires-python = ">=3.12"
 dependencies = [
     "icechunk>=2.2.2,<3",

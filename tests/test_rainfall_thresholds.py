@@ -9,11 +9,12 @@ import pytest
 import xarray as xr
 from scipy.stats import gumbel_r
 
-from scripts.common import load_config
-from scripts import part_a_thresholds
-from scripts.part_a_thresholds import (
+from scripts.common import load_config, migrate_legacy, validate_thresholds
+from scripts import rainfall_thresholds
+from scripts.rainfall_thresholds import (
     config_hash, diagnostics, empirical_positions, extract_arrays, inspect_stores,
     plot_outputs, tables, validate_arrays, write_json,
+    verify_saved_settings,
 )
 
 
@@ -164,13 +165,13 @@ def test_remote_stages_with_synthetic_stores(stores, tmp_path, monkeypatch):
     config, obs, fc = stores
     def fake_open(settings):
         return (obs if settings is config["cmorph_reference"] else fc), "synthetic-snapshot"
-    monkeypatch.setattr(part_a_thresholds, "open_store", fake_open)
+    monkeypatch.setattr(rainfall_thresholds, "open_store", fake_open)
     inspection = tmp_path / "inspection_only"
-    part_a_thresholds.run_remote(config, inspection, inspection_only=True)
+    rainfall_thresholds.run_remote(config, inspection, inspection_only=True)
     assert (inspection / "inspection.json").exists()
     assert not (inspection / "thresholds.csv").exists()
     results = tmp_path / "results"
-    part_a_thresholds.run_remote(config, results)
+    rainfall_thresholds.run_remote(config, results)
     assert len(pd.read_csv(results / "thresholds.csv")) == 30
     assert len(pd.read_csv(results / "annual_maxima.csv")) == 270
     manifest = json.loads((results / "manifest.json").read_text())
@@ -183,10 +184,62 @@ def test_remote_stages_with_synthetic_stores(stores, tmp_path, monkeypatch):
 def test_failed_remote_inspection_exports_report_only(stores, tmp_path, monkeypatch):
     config, obs, fc = stores
     obs = obs.sel(duration=["24hr"])
-    monkeypatch.setattr(part_a_thresholds, "open_store", lambda settings: (
+    monkeypatch.setattr(rainfall_thresholds, "open_store", lambda settings: (
         obs if settings is config["cmorph_reference"] else fc, "synthetic-snapshot"))
     with pytest.raises(ValueError, match="Inspection failed"):
-        part_a_thresholds.run_remote(config, tmp_path)
+        rainfall_thresholds.run_remote(config, tmp_path)
     assert (tmp_path / "inspection.json").exists()
     assert (tmp_path / "coverage.csv").exists()
     assert not (tmp_path / "thresholds.csv").exists()
+
+
+def test_map_selection_and_workers_follow_shared_settings(stores, monkeypatch):
+    import dask
+
+    config, obs, _ = stores
+    config["thresholds"].update(map_duration="48hr", map_return_period_years=2)
+    config["execution"]["workers"] = 1
+    original = dask.compute
+    seen = {}
+    def compute(*args, **kwargs):
+        seen.update(kwargs)
+        return original(*args, **kwargs)
+    monkeypatch.setattr(dask, "compute", compute)
+    _, regional = extract_arrays(obs, config)
+    assert seen["num_workers"] == 1
+    expected = obs.return_period_precip.sel(duration="48hr", return_period=2).sel(
+        lat=regional.lat, lon=regional.lon)
+    np.testing.assert_allclose(regional.values, expected.values)
+
+
+def test_legacy_cache_replay_preserves_hash_verification(stores, tmp_path):
+    config, _, _ = stores
+    legacy = copy.deepcopy(config)
+    del legacy["schema_version"]
+    del legacy["execution"]
+    legacy["part_a"] = legacy.pop("thresholds")
+    del legacy["part_a"]["map_duration"]
+    del legacy["part_a"]["map_return_period_years"]
+    for section in ["forecast", "cmorph_reference"]:
+        for key in ["region", "branch", "snapshot_id"]:
+            del legacy[section][key]
+    del legacy["forecast"]["available_start_date"]
+    del legacy["forecast"]["available_end_date"]
+    legacy["cmorph_reference"].update(duration="24hr", return_period_years=2)
+    settings_path = tmp_path / "settings_used.json"
+    write_json(settings_path, legacy)
+    write_json(tmp_path / "manifest.json", {"config_sha256": config_hash(legacy)})
+    migrated = load_config(settings_path)
+    validate_thresholds(migrated)
+    assert migrated == migrate_legacy(legacy)
+    assert migrated["forecast"]["snapshot_id"] is None
+    verify_saved_settings(migrated, tmp_path)
+    changed = copy.deepcopy(migrated)
+    changed["start_date"] = "2025-06-02"
+    with pytest.raises(ValueError, match="Settings differ"):
+        verify_saved_settings(changed, tmp_path)
+    # Editing saved settings must not make the original extraction hash valid.
+    legacy["start_date"] = "2025-06-02"
+    write_json(settings_path, legacy)
+    with pytest.raises(ValueError, match="Settings differ"):
+        verify_saved_settings(load_config(settings_path), tmp_path)

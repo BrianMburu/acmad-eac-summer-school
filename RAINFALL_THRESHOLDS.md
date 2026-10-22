@@ -20,8 +20,8 @@ single largest year.
 
 ## Implementation and acceptance criteria
 
-- [x] Store the regional box, town coordinates and dataset settings in `grid.json`,
-  loaded through `scripts/common.py`.
+- [x] Store the regional box, town coordinates and dataset settings as named values
+  in `scripts/common.py`, with `grid.json` as a generated export.
 - [x] Verify all town centres, town extents and the regional box are inside both
   dataset domains before nearest-pixel selection.
 - [x] Check duration availability, years, latitude order, units and missing values.
@@ -37,6 +37,12 @@ single largest year.
 The implementation adapts workshop E4 for CMORPH access, annual maxima,
 return levels and plots; E6 for coverage checks; and E3/E8 for chunk awareness
 and regional selection. The workshop examples remain read-only references.
+
+The analysis entry point is `scripts/rainfall_thresholds.py`. Shared settings and
+their validation are exposed through `scripts/common.py`; lazy data access is in
+`scripts/data_access.py`. Settings inspections and JSON exports use
+`uv run python -m scripts.common`. The common validator is independent of the
+observed-threshold requirements so other subgroups can reuse it.
 
 ## Completed run
 

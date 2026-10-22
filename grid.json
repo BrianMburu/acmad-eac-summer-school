@@ -1,11 +1,15 @@
 {
+  "schema_version": 2,
   "country": "Sudan",
   "country_code": "SD",
-  "analysis": "extreme_rainfall",
-  "start_date": "2025-06-01",
-  "end_date": "2025-08-31",
   "coordinate_reference_system": "EPSG:4326",
   "coordinate_source": "https://www.geonames.org/search.html?country=SD",
+  "region_extent": {
+    "west": 24.25,
+    "east": 37.0,
+    "south": 11.5,
+    "north": 16.25
+  },
   "towns": [
     {
       "name": "Khartoum",
@@ -63,50 +67,35 @@
       }
     }
   ],
-  "extent_convention": "Named bounds in degrees; each town has a 1-degree by 1-degree box centred on its coordinates.",
+  "start_date": "2025-06-01",
+  "end_date": "2025-08-31",
   "forecast": {
     "endpoint": "https://data.source.coop",
     "bucket": "e4drr-project",
+    "region": "us-east-1",
+    "branch": "main",
     "prefix": "forecasts/ecmwf-ifs-ea-swio-realized-v3/49r1-jja2025",
+    "snapshot_id": "212QY6MDW3RZ7PWD7A2G",
     "variable": "tp",
     "latitude_order": "descending",
-    "daily_rainfall": "Difference cumulative tp at consecutive 24-hour lead times, then multiply metres by 1000 to obtain mm.",
-    "date_selection": "Select forecast initializations from start_date through end_date; restrict 24-hour valid intervals to the same period.",
-    "start_dates": null,
-    "start_dates_note": "Not yet agreed by the whole group. Part A checks forecast coordinates only; B/C/D must select and check finite forecast starts before use."
+    "available_start_date": "2025-06-01",
+    "available_end_date": "2025-08-31",
+    "start_dates": null
   },
   "cmorph_reference": {
     "endpoint": "https://data.source.coop",
     "bucket": "e4drr-project",
+    "region": "us-east-1",
+    "branch": "main",
     "prefix": "observations/cmorph_rp_icechunk",
-    "reference_start_year": 1998,
-    "reference_end_year": 2024,
+    "snapshot_id": "309ZYV7EMDMNPD0EDZK0",
     "variable": "return_period_precip",
     "annual_maxima_variable": "annual_maxima",
-    "duration": "24hr",
-    "return_period_years": 2,
-    "units": "mm",
-    "latitude_order": "ascending"
+    "latitude_order": "ascending",
+    "reference_start_year": 1998,
+    "reference_end_year": 2024
   },
-  "comparison": {
-    "threshold_matching": "Nearest CMORPH pixel for each forecast grid point within each town extent.",
-    "exceedance_operator": ">",
-    "probability": "Fraction of ensemble members whose 24-hour rainfall exceeds the local CMORPH threshold.",
-    "required_checks": [
-      "Verify each extent lies within both dataset domains before nearest-point selection; coverage has not yet been checked.",
-      "Require finite forecast rainfall and CMORPH thresholds; mask missing thresholds in probability maps.",
-      "Use descending latitude slices for forecasts and ascending latitude slices for CMORPH.",
-      "Forecast grid spacing is 0.25 degrees and CMORPH is approximately 8 km; nearest-pixel matching is not area-conservative regridding."
-    ],
-    "interpretation": "The threshold is fitted to annual maxima from 1998-2024, not observed June-August 2025 rainfall or a seasonal return level."
-  },
-  "region_extent": {
-    "west": 24.25,
-    "east": 37.0,
-    "south": 11.5,
-    "north": 16.25
-  },
-  "part_a": {
+  "thresholds": {
     "durations": [
       "24hr",
       "48hr"
@@ -116,9 +105,18 @@
       10,
       50
     ],
-    "town_sampling": "Nearest CMORPH pixel to each town centre; no averaging or maximum over town extents.",
-    "units_if_missing": "mm",
-    "units_if_missing_reason": "Workshop E4 treats stored return levels and annual maxima as rainfall depths in mm. Explicit conflicting metadata is rejected; any fallback is logged.",
-    "second_duration_policy": "Require 48hr. If unavailable, inspect the reported durations and agree another duration before editing this list."
+    "map_duration": "24hr",
+    "map_return_period_years": 10,
+    "units_if_missing": "mm"
+  },
+  "comparison": {
+    "duration": "24hr",
+    "return_period_years": 2,
+    "exceedance_operator": ">",
+    "matching": "nearest"
+  },
+  "execution": {
+    "workers": 2,
+    "output_directory": "out/rainfall_thresholds"
   }
 }

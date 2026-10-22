@@ -1,10 +1,10 @@
-# Sudan rainfall extremes — subgroup A
+# Sudan rainfall extremes
 
 Part A of the ACMAD group project: define extreme rainfall at Khartoum, Kassala,
 Gedaref, El Obeid and Nyala using CMORPH annual maxima from 1998–2024. Other
 subgroups compare these levels with June–August 2025 ECMWF forecasts.
 
-See the [Part A task description and results](TASK_A.md) for the assignment,
+See the [observed rainfall threshold task and results](RAINFALL_THRESHOLDS.md) for the assignment,
 acceptance criteria, completed local run and handoff to the other teams.
 
 ## Run locally
@@ -27,17 +27,17 @@ Run the three stages in order. Review the inspection report before extraction;
 coverage or unit failures stop the run.
 
 ```sh
-uv run python -m scripts.part_a_thresholds inspect
-uv run python -m scripts.part_a_thresholds extract
-uv run python -m scripts.part_a_thresholds plots
+uv run python -m scripts.rainfall_thresholds inspect
+uv run python -m scripts.rainfall_thresholds extract
+uv run python -m scripts.rainfall_thresholds plots
 ```
 
-The default output directory is `out/part_a`. The completed run is retained locally
+The default output directory is `out/rainfall_thresholds`. The completed run is retained locally
 in `out/part_a_local`; its result archive is `out/part_a_results.zip`. Generated
 outputs are ignored by Git. To regenerate figures from the completed run offline:
 
 ```sh
-uv run python -m scripts.part_a_thresholds plots --out out/part_a_local --config out/part_a_local/settings_used.json
+uv run python -m scripts.rainfall_thresholds plots --out out/part_a_local --config out/part_a_local/settings_used.json
 ```
 
 Use `--out PATH` to choose another output directory for any stage. If settings
@@ -45,16 +45,63 @@ have changed since extraction, plot with the saved `settings_used.json`.
 
 ## Settings and methods
 
-`scripts/common.py` loads the shared `grid.json`. The regional map box encloses
-the five town extents; it includes neighbouring areas and is not a Sudan boundary
-mask. Town thresholds use the nearest CMORPH pixel to the town centre, not the
-maximum or mean within a town extent. Coverage in both stores is checked before
-nearest-point selection. Forecast data values are not read by Part A.
+**Edit the named settings at the top of `scripts/common.py`.** This is the single
+editable settings source for all subgroups. The data-access and coordinate helpers
+live in `scripts/data_access.py`. Importing common settings needs no scientific
+packages and performs no network access.
+
+| Setting in `common.py` | Current value or purpose |
+|---|---|
+| `REGION` | 24.25–37°E, 11.5–16.25°N |
+| `TOWNS` | Five Sudanese town centres; 1° boxes are derived automatically |
+| `FORECAST_START_DATE`, `FORECAST_END_DATE` | 1 June–31 August 2025 |
+| `FORECAST_START_DATES` | `None`, pending the whole-group decision |
+| `CMORPH_YEARS` | 1998–2024 |
+| `CMORPH_STORE`, `FORECAST_STORE` | Public store locations, coordinate order and pinned snapshots |
+| `DURATIONS`, `RETURN_PERIODS` | 24/48 hours and 2/10/50 years |
+| `MAP_DURATION`, `MAP_RETURN_PERIOD` | 24 hours, 10 years |
+| `WORKERS`, `OUTPUT_DIRECTORY` | Two workers, `out/rainfall_thresholds` |
+| `COMPARISON` | Planned forecast comparison: local 2-year 24-hour level, strict `>` |
+
+Inspect the effective settings or refresh the JSON export after editing:
+
+```sh
+uv run python -m scripts.common
+uv run python -m scripts.common --export grid.json
+```
+
+`grid.json` is a **generated export**, not a second settings source. The analysis
+uses `common.py` by default. `--config PATH.json` explicitly loads and validates
+an exported override or a previous run's `settings_used.json`. Legacy saved settings
+are migrated in memory for offline plotting, preserving their original hash check.
+
+Other scripts can import named values directly:
+
+```python
+from scripts.common import REGION, TOWNS, FORECAST_START_DATES, load_config, validate_common
+
+config = load_config()  # a fresh, validated copy of the named settings
+```
+
+Shared validation checks required fields, unknown keys, types, finite coordinates,
+complete extent containment, dates, store endpoints and reference years. Errors
+identify the setting to fix. `validate_thresholds(config)` checks this analysis's
+duration and return-period requirements separately. Before forecast rainfall reads,
+B/C/D must call `validate_common(config, require_forecast_dates=True)` and check
+that each selected start actually contains finite data.
+
+Store `snapshot_id` values pin the completed run's data. Set a snapshot to `None`
+to follow that store's `branch`; each run records the actual snapshot it reads.
+
+The regional box includes neighbouring areas and is not a Sudan boundary mask.
+Town thresholds use the nearest CMORPH pixel to the town centre. Coverage in both
+stores is checked before nearest-point selection. Forecast rainfall arrays are
+not read by the observed-threshold analysis.
 
 Part A requires 24-hour and 48-hour durations and 2-, 10-, 50-year return periods.
 If 48hr is absent, inspection lists available durations and stops; agree a second
 duration and update the configuration before rerunning. Forecast start dates
-are still a group decision (`forecast.start_dates` is null); B/C/D must check
+are still a group decision (`FORECAST_START_DATES` is `None`); B/C/D must check
 finite data for every selected start because unwritten starts may read as NaN.
 
 Annual maxima and return levels must be rainfall **depths** in mm (equivalent
