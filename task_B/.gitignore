@@ -1,0 +1,8 @@
+inputs/
+.matplotlib/
+__pycache__/
+*.png
+*.csv
+results.md
+run_metadata.json
+figure_provenance.json

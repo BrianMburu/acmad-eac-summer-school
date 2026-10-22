@@ -1,0 +1,2 @@
+-r ../task_A/requirements.txt
+xclim

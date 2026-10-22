@@ -40,3 +40,9 @@ The revised Task A is saved as `task_A`. Its `analyze.py` generates five
 `*_return_levels.png` figures and `regional_10yr_24hr.png`, using retained real
 CMORPH inputs. Its metadata records script/configuration/input hashes and the
 Git revision. `results.md` includes explicit observed-versus-fit diagnostics.
+
+The revised Task B is saved as `task_B`. Its `analyze.py` recomputes daily
+rainfall, three-threshold counts and xclim heavy days from retained cumulative
+forecasts, and calls its committed `plot_results.py` to generate both town
+figures and `two_town_threshold_comparison.png`. Current analysis/renderer and
+input hashes plus Git revision are recorded with its final outputs.
