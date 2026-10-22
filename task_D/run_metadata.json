@@ -1,0 +1,225 @@
+{
+  "run_utc": "2026-10-22T21:31:26.186184+00:00",
+  "script_sha256": "818a48e7b24c6ef0e607c0a1bfd8bd7c13071a88931f7739e274f3cbad6dc0a2",
+  "grid_json_sha256": "eec982c46d4e54575aa446069d8112c4f2a86acd599a1e1dbd742fad486bc881",
+  "git_commit": "02bb39b9b7528cc2792acbe4689f57cf1ffca568",
+  "input_hashes": {
+    "inputs/cache/2025-06-10_34a6d13a70d43489.npz": "0e46c3990fd68d014cdb8ae51b9bdef021cd4095eb005621d8b9298bf541340c",
+    "inputs/cache/2025-07-01_34a6d13a70d43489.npz": "3275fcc39ed5598f2030f2b24cfb9dfc066ff9e135538a95ac0b3effddf4cfd6",
+    "inputs/cache/2025-07-22_34a6d13a70d43489.npz": "c93c0915e91e7c0539b5592894440cb3a8d84e238896f927e35ce4b083a238ab",
+    "inputs/cache/2025-08-12_34a6d13a70d43489.npz": "b8941ef0bc62892d826e832e0934734b7627c9a1c469524eaff21b4fe96cd6b8",
+    "inputs/source_run_metadata.json": "c977e5bbc22758326d5bf3b3a81aa1980d107e437e9afb02112090ae8388eca2",
+    "inputs/cache/metadata_34a6d13a70d43489.json": "7ecd6c663ebbf8ae73517db8fa0dfb141c83d2b1dc00479dd32868aaff71e1e7"
+  },
+  "source_metadata": {
+    "domains": {
+      "forecast": {
+        "source": "forecast",
+        "latitude_order": "descending",
+        "bounds": {
+          "south": -40.0,
+          "north": 40.0,
+          "west": 15.0,
+          "east": 80.0
+        },
+        "towns": [
+          {
+            "town": "Khartoum",
+            "inside": true,
+            "selected_latitude": 15.5,
+            "selected_longitude": 32.5
+          },
+          {
+            "town": "Kassala",
+            "inside": true,
+            "selected_latitude": 15.5,
+            "selected_longitude": 36.5
+          },
+          {
+            "town": "Gedaref",
+            "inside": true,
+            "selected_latitude": 14.0,
+            "selected_longitude": 35.5
+          },
+          {
+            "town": "El Obeid",
+            "inside": true,
+            "selected_latitude": 13.25,
+            "selected_longitude": 30.25
+          },
+          {
+            "town": "Nyala",
+            "inside": true,
+            "selected_latitude": 12.0,
+            "selected_longitude": 25.0
+          }
+        ],
+        "status": "verified from source coordinates"
+      },
+      "cmorph": {
+        "source": "CMORPH",
+        "latitude_order": "ascending",
+        "bounds": {
+          "south": -14.481504311999998,
+          "north": 25.469981112000006,
+          "west": 19.5351656265,
+          "east": 53.949070063499995
+        },
+        "towns": [
+          {
+            "town": "Khartoum",
+            "inside": true,
+            "selected_latitude": 15.573073975999996,
+            "selected_longitude": 32.5586093775
+          },
+          {
+            "town": "Kassala",
+            "inside": true,
+            "selected_latitude": 15.427531223999999,
+            "selected_longitude": 36.4147128345
+          },
+          {
+            "town": "Gedaref",
+            "inside": true,
+            "selected_latitude": 14.044875080000004,
+            "selected_longitude": 35.3961194685
+          },
+          {
+            "town": "El Obeid",
+            "inside": true,
+            "selected_latitude": 13.171618568000007,
+            "selected_longitude": 30.230395969499998
+          },
+          {
+            "town": "Nyala",
+            "inside": true,
+            "selected_latitude": 12.080047928000006,
+            "selected_longitude": 24.8464024635
+          }
+        ],
+        "status": "verified from source coordinates"
+      }
+    },
+    "box": {
+      "west": 23.380694,
+      "east": 37.89998,
+      "south": 10.548882,
+      "north": 17.051772
+    },
+    "forecast_dims": [
+      "time",
+      "step",
+      "number",
+      "latitude",
+      "longitude"
+    ],
+    "forecast_shape": [
+      92,
+      65,
+      51,
+      321,
+      261
+    ],
+    "forecast_chunks": [
+      1,
+      1,
+      51,
+      321,
+      261
+    ],
+    "threshold_dims": [
+      "duration",
+      "return_period",
+      "lat",
+      "lon"
+    ],
+    "threshold_chunks": [
+      1,
+      6,
+      550,
+      474
+    ],
+    "metadata_open_seconds": 16.33543395799643,
+    "threshold_read_seconds": 10.837864999994054,
+    "threshold_units": "mm in 24 h",
+    "threshold_matching": "nearest CMORPH pixel per forecast pixel",
+    "threshold_estimated_storage_chunks": 1
+  },
+  "towns": [
+    {
+      "name": "Khartoum",
+      "latitude": 15.551772,
+      "longitude": 32.532406,
+      "extent": {
+        "west": 32.032406,
+        "east": 33.032406,
+        "south": 15.051772,
+        "north": 16.051772
+      }
+    },
+    {
+      "name": "Kassala",
+      "latitude": 15.450992,
+      "longitude": 36.39998,
+      "extent": {
+        "west": 35.89998,
+        "east": 36.89998,
+        "south": 14.950992,
+        "north": 15.950992
+      }
+    },
+    {
+      "name": "Gedaref",
+      "latitude": 14.034927,
+      "longitude": 35.383444,
+      "extent": {
+        "west": 34.883444,
+        "east": 35.883444,
+        "south": 13.534927,
+        "north": 14.534927
+      }
+    },
+    {
+      "name": "El Obeid",
+      "latitude": 13.184212,
+      "longitude": 30.216694,
+      "extent": {
+        "west": 29.716694,
+        "east": 30.716694,
+        "south": 12.684212,
+        "north": 13.684212
+      }
+    },
+    {
+      "name": "Nyala",
+      "latitude": 12.048882,
+      "longitude": 24.880694,
+      "extent": {
+        "west": 24.380694,
+        "east": 25.380694,
+        "south": 11.548882,
+        "north": 12.548882
+      }
+    }
+  ],
+  "source_signature": "34a6d13a70d434893a1c5349c7525be844328bdab1692bae91ac5f9020d8a090",
+  "starts": [
+    "2025-06-10",
+    "2025-07-01",
+    "2025-07-22",
+    "2025-08-12"
+  ],
+  "forecast_days": 5,
+  "total_sample_intervals": 20,
+  "probability_decision": 0.2,
+  "minimum_members": 11,
+  "probability_plot_scale_max": 0.35,
+  "rainfall_threshold_units": "mm in 24 h",
+  "fresh_cloud_domain_check": false,
+  "execution": "offline regeneration from retained actual probabilities",
+  "versions": {
+    "numpy": "2.5.4",
+    "pandas": "3.1.0",
+    "matplotlib": "3.11.2"
+  }
+}

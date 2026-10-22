@@ -1,0 +1,36 @@
+Sampled starts: 2025-06-10, 2025-07-01, 2025-07-22, 2025-08-12; days 1–5.
+Probability = members with rainfall > local 2-year 24 h threshold / 51.
+Frequency decision is probability >= 20%: at least 11/51 members (21.57%).
+Frequency counts 20 sampled start/day intervals, not all days or starts in JJA.
+Missing thresholds or incomplete member data are masked; frequency fractions use available intervals at each pixel.
+Dates with overlapping leads, if supplied, count separate forecast intervals rather than unique observed days.
+Forecast chunk dimensions: ['time', 'step', 'number', 'latitude', 'longitude']; shapes: [1, 1, 51, 321, 261].
+CMORPH threshold chunk dimensions: ['duration', 'return_period', 'lat', 'lon']; shapes: [1, 6, 550, 474].
+A pan chunk covers a broad spatial map for one initialization/lead, often all ensemble members.
+A regional map uses spatial values already in those chunks. A single point may fetch the same large chunks.
+Daily rainfall requires two cumulative endpoints; selecting six endpoints yields five daily maps and reuses shared endpoints.
+A pencil layout favors time series at a point, but a map must span many small spatial chunks.
+read_timings.csv records measured read+decode+compute seconds and source chunk estimates, not exact HTTP request counts.
+Warm caches, network conditions, metadata reads and compression affect timing; local cached reads are labeled separately.
+Missing cumulative tp units use the documented metres convention only for the known workshop store.
+Forecast latitude descends, CMORPH ascends; town and full-region domains are verified.
+Thresholds use nearest CMORPH pixels, not conservative regridding; this is a rainfall-hazard indicator, not verified impact risk.
+
+Town frequency at nearest forecast pixels:
+    town  grid_latitude  grid_longitude  exceedance_intervals  available_intervals  fraction
+Khartoum          15.50           32.50                     0                   20       0.0
+ Kassala          15.50           36.50                     0                   20       0.0
+ Gedaref          14.00           35.50                     0                   20       0.0
+El Obeid          13.25           30.25                     0                   20       0.0
+   Nyala          12.00           25.00                     0                   20       0.0
+
+Measured read records:
+                         kind initialization   seconds  estimated_storage_chunks  negative_totals_clipped
+      local_probability_cache     2025-06-10  0.001463                         0                        0
+original_forecast_read_record     2025-06-10 37.426808                         6                     2543
+      local_probability_cache     2025-07-01  0.000753                         0                        0
+original_forecast_read_record     2025-07-01 19.490687                         6                     1868
+      local_probability_cache     2025-07-22  0.000490                         0                        0
+original_forecast_read_record     2025-07-22 21.141598                         6                     3218
+      local_probability_cache     2025-08-12  0.000559                         0                        0
+original_forecast_read_record     2025-08-12 34.876369                         6                      692

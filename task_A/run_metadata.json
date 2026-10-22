@@ -1,0 +1,109 @@
+{
+  "script_sha256": "0706720c836ae87c1d4def34a36fabc7f5150cc91e02419d1e65cc505bb77b9b",
+  "grid_json_sha256": "eec982c46d4e54575aa446069d8112c4f2a86acd599a1e1dbd742fad486bc881",
+  "git_commit": "9fbde2bbd5a6c55c48a80cf1b4ab27ddb00db6b5",
+  "inputs": {
+    "thresholds.csv": "16401d51ff4e1849c1b412cba993beef27cccc7f0503d0e604ddbcba7805a48a",
+    "regional_10yr_24hr.nc": "ee9d27f56e894038b4caae56eb6707f0a4d7d8d22dbfc69e1d679521a0f0ece9",
+    "annual_maxima.csv": "c16696a6b8fe8d1c833acf011d13f06509a7641196c49348c2732695ba6d00b8"
+  },
+  "source": {
+    "endpoint": "https://data.source.coop",
+    "bucket": "e4drr-project",
+    "prefix": "observations/cmorph_rp_icechunk",
+    "reference_start_year": 1998,
+    "reference_end_year": 2024,
+    "variable": "return_period_precip",
+    "annual_maxima_variable": "annual_maxima",
+    "duration": "24hr",
+    "return_period_years": 2,
+    "units": "mm",
+    "latitude_order": "ascending"
+  },
+  "execution": "offline from saved actual CMORPH extraction",
+  "historical_source_domain_evidence": {
+    "source": "CMORPH",
+    "latitude_order": "ascending",
+    "bounds": {
+      "south": -14.481504311999998,
+      "north": 25.469981112000006,
+      "west": 19.5351656265,
+      "east": 53.949070063499995
+    },
+    "towns": [
+      {
+        "town": "Khartoum",
+        "inside": true,
+        "selected_latitude": 15.573073975999996,
+        "selected_longitude": 32.5586093775
+      },
+      {
+        "town": "Kassala",
+        "inside": true,
+        "selected_latitude": 15.427531223999999,
+        "selected_longitude": 36.4147128345
+      },
+      {
+        "town": "Gedaref",
+        "inside": true,
+        "selected_latitude": 14.044875080000004,
+        "selected_longitude": 35.3961194685
+      },
+      {
+        "town": "El Obeid",
+        "inside": true,
+        "selected_latitude": 13.171618568000007,
+        "selected_longitude": 30.230395969499998
+      },
+      {
+        "town": "Nyala",
+        "inside": true,
+        "selected_latitude": 12.080047928000006,
+        "selected_longitude": 24.8464024635
+      }
+    ],
+    "status": "verified from source coordinates"
+  },
+  "fresh_cloud_domain_check": false,
+  "cached_map_latitude_order": "ascending",
+  "historical_domain_evidence_file": "/Users/mac/Group1/acmad-eac-summer-school/part_c_forecast_signals/run_metadata.json",
+  "tail_diagnostic": "largest absolute published-curve residual among empirical return periods >=5 years",
+  "years": [
+    1998,
+    1999,
+    2000,
+    2001,
+    2002,
+    2003,
+    2004,
+    2005,
+    2006,
+    2007,
+    2008,
+    2009,
+    2010,
+    2011,
+    2012,
+    2013,
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "durations": [
+    "24hr",
+    "6hr"
+  ],
+  "versions": {
+    "numpy": "2.5.4",
+    "pandas": "3.1.0",
+    "xarray": "2026.9.0"
+  }
+}

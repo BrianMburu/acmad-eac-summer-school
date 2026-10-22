@@ -1,0 +1,105 @@
+{
+  "start": "2025-07-06",
+  "end": "2025-07-26",
+  "min_members": 1,
+  "domain_validation": {
+    "status": "verified",
+    "forecast": {
+      "source": "forecast",
+      "latitude_order": "descending",
+      "bounds": {
+        "south": -40.0,
+        "north": 40.0,
+        "west": 15.0,
+        "east": 80.0
+      },
+      "towns": [
+        {
+          "town": "Khartoum",
+          "inside": true,
+          "selected_latitude": 15.5,
+          "selected_longitude": 32.5
+        },
+        {
+          "town": "Kassala",
+          "inside": true,
+          "selected_latitude": 15.5,
+          "selected_longitude": 36.5
+        },
+        {
+          "town": "Gedaref",
+          "inside": true,
+          "selected_latitude": 14.0,
+          "selected_longitude": 35.5
+        },
+        {
+          "town": "El Obeid",
+          "inside": true,
+          "selected_latitude": 13.25,
+          "selected_longitude": 30.25
+        },
+        {
+          "town": "Nyala",
+          "inside": true,
+          "selected_latitude": 12.0,
+          "selected_longitude": 25.0
+        }
+      ],
+      "status": "verified from source coordinates"
+    },
+    "cmorph": {
+      "source": "CMORPH",
+      "latitude_order": "ascending",
+      "bounds": {
+        "south": -14.481504311999998,
+        "north": 25.469981112000006,
+        "west": 19.5351656265,
+        "east": 53.949070063499995
+      },
+      "towns": [
+        {
+          "town": "Khartoum",
+          "inside": true,
+          "selected_latitude": 15.573073975999996,
+          "selected_longitude": 32.5586093775
+        },
+        {
+          "town": "Kassala",
+          "inside": true,
+          "selected_latitude": 15.427531223999999,
+          "selected_longitude": 36.4147128345
+        },
+        {
+          "town": "Gedaref",
+          "inside": true,
+          "selected_latitude": 14.044875080000004,
+          "selected_longitude": 35.3961194685
+        },
+        {
+          "town": "El Obeid",
+          "inside": true,
+          "selected_latitude": 13.171618568000007,
+          "selected_longitude": 30.230395969499998
+        },
+        {
+          "town": "Nyala",
+          "inside": true,
+          "selected_latitude": 12.080047928000006,
+          "selected_longitude": 24.8464024635
+        }
+      ],
+      "status": "verified from source coordinates"
+    }
+  },
+  "thresholds_mm": {
+    "Khartoum": 23.821653366088867,
+    "Kassala": 37.94577407836914,
+    "Gedaref": 52.983036041259766,
+    "El Obeid": 37.18453598022461,
+    "Nyala": 32.31674575805664
+  },
+  "script_sha256": "1c74447b7ab42df30249c1562e17cec316a6262026560b84c0c3fb5ade7643b2",
+  "git_commit": "036ebc3e97554f733d8196b1f183723f495c2d20",
+  "rainfall_units": "mm in 24 h",
+  "negative_tolerance_mm": 0.05
+}

@@ -1,0 +1,17 @@
+Khartoum 24hr: largest 77.1 mm in 2017; 50-year MLE changes 68.2 → 62.1 mm without that year.
+Khartoum 6hr: largest 71.7 mm in 2006; 50-year MLE changes 64.7 → 59.0 mm without that year.
+Kassala 24hr: largest 74.3 mm in 2008; 50-year MLE changes 77.5 → 73.4 mm without that year.
+Kassala 6hr: largest 72.2 mm in 2008; 50-year MLE changes 72.0 → 67.9 mm without that year.
+Gedaref 24hr: largest 91.0 mm in 2003; 50-year MLE changes 98.6 → 95.2 mm without that year.
+Gedaref 6hr: largest 78.5 mm in 2003; 50-year MLE changes 85.5 → 82.4 mm without that year.
+El Obeid 24hr: largest 68.2 mm in 1998; 50-year MLE changes 91.1 → 88.3 mm without that year.
+El Obeid 6hr: largest 67.0 mm in 2013; 50-year MLE changes 81.7 → 78.5 mm without that year.
+Nyala 24hr: largest 63.7 mm in 2022; 50-year MLE changes 67.9 → 64.8 mm without that year.
+Nyala 6hr: largest 60.3 mm in 2022; 50-year MLE changes 58.8 → 55.7 mm without that year.
+
+Thresholds use the published store; sensitivity refits both samples with scipy Gumbel maximum likelihood.
+The original store fitting estimator is not assumed to be MLE. Compare the two MLE fits for removal sensitivity.
+Exceedance years use strict >. Crossing a return level is not by itself evidence that a fit fails.
+The three largest years are annotated for visual diagnosis; no formal outlier claim is made.
+A 50-year return level extrapolates beyond the 27-year sample and is uncertain.
+These are annual maxima, not June–August 2025 totals. Nearest CMORPH pixels represent grid cells, not gauges.

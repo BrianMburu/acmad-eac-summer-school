@@ -1,0 +1,6 @@
+town,town_latitude,town_longitude,grid_latitude,grid_longitude,exceedance_intervals,available_intervals,frequency_fraction,maximum_probability
+Khartoum,15.551772,32.532406,15.5,32.5,0,20,0.0,0.0196078431372549
+Kassala,15.450992,36.39998,15.5,36.5,0,20,0.0,0.0
+Gedaref,14.034927,35.383444,14.0,35.5,0,20,0.0,0.0
+El Obeid,13.184212,30.216694,13.25,30.25,0,20,0.0,0.0
+Nyala,12.048882,24.880694,12.0,25.0,0,20,0.0,0.0196078431372549

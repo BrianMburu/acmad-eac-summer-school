@@ -1,0 +1,9 @@
+kind,initialization,seconds,estimated_storage_chunks,negative_totals_clipped
+local_probability_cache,2025-06-10,0.0014633749960921705,0,0
+original_forecast_read_record,2025-06-10,37.426807791998726,6,2543
+local_probability_cache,2025-07-01,0.0007526659974246286,0,0
+original_forecast_read_record,2025-07-01,19.490687291996437,6,1868
+local_probability_cache,2025-07-22,0.0004902500004391186,0,0
+original_forecast_read_record,2025-07-22,21.14159762499912,6,3218
+local_probability_cache,2025-08-12,0.0005586670013144612,0,0
+original_forecast_read_record,2025-08-12,34.87636850000126,6,692

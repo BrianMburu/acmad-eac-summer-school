@@ -1,0 +1,130 @@
+{
+  "initialization": "2025-07-16 00:00:00",
+  "towns": [
+    {
+      "name": "Khartoum",
+      "latitude": 15.551772,
+      "longitude": 32.532406,
+      "extent": {
+        "west": 32.032406,
+        "east": 33.032406,
+        "south": 15.051772,
+        "north": 16.051772
+      }
+    },
+    {
+      "name": "Kassala",
+      "latitude": 15.450992,
+      "longitude": 36.39998,
+      "extent": {
+        "west": 35.89998,
+        "east": 36.89998,
+        "south": 14.950992,
+        "north": 15.950992
+      }
+    }
+  ],
+  "forecast": {
+    "endpoint": "https://data.source.coop",
+    "bucket": "e4drr-project",
+    "prefix": "forecasts/ecmwf-ifs-ea-swio-realized-v3/49r1-jja2025",
+    "variable": "tp",
+    "latitude_order": "descending",
+    "daily_rainfall": "Difference cumulative tp at consecutive 24-hour lead times, then multiply metres by 1000 to obtain mm.",
+    "date_selection": "Select forecast initializations from start_date through end_date; restrict 24-hour valid intervals to the same period."
+  },
+  "members": 51,
+  "domain_validation": {
+    "status": "verified",
+    "forecast": {
+      "source": "forecast",
+      "latitude_order": "descending",
+      "bounds": {
+        "south": -40.0,
+        "north": 40.0,
+        "west": 15.0,
+        "east": 80.0
+      },
+      "towns": [
+        {
+          "town": "Khartoum",
+          "inside": true,
+          "selected_latitude": 15.5,
+          "selected_longitude": 32.5
+        },
+        {
+          "town": "Kassala",
+          "inside": true,
+          "selected_latitude": 15.5,
+          "selected_longitude": 36.5
+        }
+      ],
+      "status": "verified from source coordinates"
+    },
+    "cmorph": {
+      "source": "CMORPH",
+      "latitude_order": "ascending",
+      "bounds": {
+        "south": -14.481504311999998,
+        "north": 25.469981112000006,
+        "west": 19.5351656265,
+        "east": 53.949070063499995
+      },
+      "towns": [
+        {
+          "town": "Khartoum",
+          "inside": true,
+          "selected_latitude": 15.573073975999996,
+          "selected_longitude": 32.5586093775
+        },
+        {
+          "town": "Kassala",
+          "inside": true,
+          "selected_latitude": 15.427531223999999,
+          "selected_longitude": 36.4147128345
+        }
+      ],
+      "status": "verified from source coordinates"
+    }
+  },
+  "script_sha256": "5aebe01b28be8ca56ad159a8470cdf2b8a25371409d7467482f9e8a0a1fb10bf",
+  "git_commit": "49bf14bdcd804de5a610a456e3f179f0a62d6c93",
+  "rainfall_units": "mm in 24 h",
+  "count_units": "members",
+  "cumulative_precipitation_units": "m",
+  "negative_tolerance_mm": 0.05,
+  "negative_totals_clipped": 13,
+  "minimum_raw_daily_mm": -0.030517578125,
+  "units_source": "documented workshop store convention",
+  "days": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+  ],
+  "thresholds_mm": {
+    "Khartoum": {
+      "20mm": 20.0,
+      "2yr": 23.821653366088867,
+      "10yr": 51.65108108520508
+    },
+    "Kassala": {
+      "20mm": 20.0,
+      "2yr": 37.94577407836914,
+      "10yr": 60.562896728515625
+    }
+  },
+  "forecast_grid_latitudes": null,
+  "forecast_grid_longitudes": null,
+  "reused_point_cache": true,
+  "versions": {
+    "xclim": "0.62.0",
+    "xarray": "2026.9.0"
+  }
+}

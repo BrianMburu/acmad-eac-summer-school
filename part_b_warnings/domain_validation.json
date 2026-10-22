@@ -1,0 +1,53 @@
+{
+  "status": "verified",
+  "forecast": {
+    "source": "forecast",
+    "latitude_order": "descending",
+    "bounds": {
+      "south": -40.0,
+      "north": 40.0,
+      "west": 15.0,
+      "east": 80.0
+    },
+    "towns": [
+      {
+        "town": "Khartoum",
+        "inside": true,
+        "selected_latitude": 15.5,
+        "selected_longitude": 32.5
+      },
+      {
+        "town": "Kassala",
+        "inside": true,
+        "selected_latitude": 15.5,
+        "selected_longitude": 36.5
+      }
+    ],
+    "status": "verified from source coordinates"
+  },
+  "cmorph": {
+    "source": "CMORPH",
+    "latitude_order": "ascending",
+    "bounds": {
+      "south": -14.481504311999998,
+      "north": 25.469981112000006,
+      "west": 19.5351656265,
+      "east": 53.949070063499995
+    },
+    "towns": [
+      {
+        "town": "Khartoum",
+        "inside": true,
+        "selected_latitude": 15.573073975999996,
+        "selected_longitude": 32.5586093775
+      },
+      {
+        "town": "Kassala",
+        "inside": true,
+        "selected_latitude": 15.427531223999999,
+        "selected_longitude": 36.4147128345
+      }
+    ],
+    "status": "verified from source coordinates"
+  }
+}

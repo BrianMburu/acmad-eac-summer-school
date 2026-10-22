@@ -1,0 +1,21 @@
+Window: 2025-07-06 to 2025-07-26; signal criterion >= 1/51 members above local 2-year level.
+    town status  threshold_mm  peak_members_above strongest_start  available_starts  signal_starts  fraction_starts_with_signal first_signal_start  earliest_lead_days  longest_consecutive_signal_starts
+Khartoum signal     23.821653                   3      2025-07-21                21             19                     0.904762         2025-07-06                  10                                  3
+ Kassala signal     37.945774                   2      2025-07-23                21             10                     0.476190         2025-07-06                  10                                  2
+ Gedaref signal     52.983036                   1      2025-07-20                21              2                     0.095238         2025-07-20                   8                                  1
+El Obeid signal     37.184536                   4      2025-07-07                21             12                     0.571429         2025-07-06                  10                                  2
+   Nyala signal     32.316746                   4      2025-07-07                21             20                     0.952381         2025-07-06                  10                                  5
+
+Earliest means greatest lead time before the SAME valid 24-hour interval; first issuance date is also reported.
+Consistency means the longest run of consecutive initialization dates signaling that SAME valid interval.
+Signal-start fractions additionally describe frequency, and do not prove persistence for the same event.
+Boundary valid dates have fewer available starts; inspect same_valid_day_signals.csv before comparing.
+Most alarming start maximizes peak member count, then summed member-day counts, then earliest initialization.
+If all counts are zero, the tied earliest start is displayed with an explicit no-signal label.
+Missing members invalidate a town-day cell; missing forecasts are gray, never silently counted as zero.
+Thresholds are mm in 24 h; count units are members. Latitude order and all five town domain checks verified.
+Tiny negative daily amounts up to 0.05 mm are clipped to zero and recorded; larger decreases stop execution.
+Differences between towns can reflect thresholds, rainfall regime and ensemble spread; these counts cannot isolate a causal explanation.
+Annual maxima end in 2024. No observed 2025 event rainfall is supplied, so these plots show forecast signals, not verified hits or skill.
+Earliest-lead town(s): Khartoum, Kassala, El Obeid, Nyala (10 days).
+Most persistent town(s): Nyala (5 consecutive starts for one valid interval).

@@ -1,0 +1,203 @@
+{
+  "run_utc": "2026-10-22T21:21:31.768158+00:00",
+  "script_sha256": "9b5224fedf8721729dd7c7cd3107b0db4096ad223eb4d605102ddf593839230b",
+  "grid_json_sha256": "eec982c46d4e54575aa446069d8112c4f2a86acd599a1e1dbd742fad486bc881",
+  "git_commit": "90b9eb981f0fc4378c1fce672688c2b0a66d8ce4",
+  "input_hashes": {
+    "inputs/cache/2025-07-06.npz": "a37a163292aea8c8a2ccddfed3af2a6445a7d598a45f46d3dfb9118fdd966e57",
+    "inputs/cache/2025-07-07.npz": "bca98c16c02d47f7c02df165f648a349015946bb891d589f044ec2386b71cbfe",
+    "inputs/cache/2025-07-08.npz": "7a286ee1e2213c2a601b682b6336c4acbebf0d163e76372b8686ba60e0d8ae97",
+    "inputs/cache/2025-07-09.npz": "1d0eb32d28de4c9773e082c19dae396017afe6019f55d224603c1f3112c106a9",
+    "inputs/cache/2025-07-10.npz": "d2b1d37cae808a3d300516c3d9bfb1c21083f21238c158e525752f27593acb19",
+    "inputs/cache/2025-07-11.npz": "25517cb1fdf89a3206af46af634d9a1c76b767810f17a1c795040c2dbaa948c6",
+    "inputs/cache/2025-07-12.npz": "73596552f96c593163ad17048d2d9a061bc23965496af54baae87ce76b001071",
+    "inputs/cache/2025-07-13.npz": "b23969143f8c5e51313e9795077e6a63f099d65ae5642b82b82911b10d57cdcd",
+    "inputs/cache/2025-07-14.npz": "a6e30c5934a121ab8ef7c9e472ff2d570b0ba7da425dcbb3642d9c9bd5e3b8c4",
+    "inputs/cache/2025-07-15.npz": "219d2ec0b89d5b83adb10f16d4cc4f679469748af1ae57397d4881c8f1bf6b85",
+    "inputs/cache/2025-07-16.npz": "4cb145c3294bd699fbe2afc035697982fce00d0345d6c7d7eb3e157db60c2c2f",
+    "inputs/cache/2025-07-17.npz": "4462fd80b5ecd332a0a602449c8d6f7084c6bdb3ad14abfa5cd566d963c1bb10",
+    "inputs/cache/2025-07-18.npz": "aaa311345232268c1a138d9ca6c5861658e5df6d2f3fc9c02c8b6390f665b8b1",
+    "inputs/cache/2025-07-19.npz": "36108766784b11d115766576ee8971b7dc669cdfa4365229c5197291544c6e1e",
+    "inputs/cache/2025-07-20.npz": "a39a16c210a738f3967471f8a7e9de6f18eeb2a864848d1ddf21d8e932511acd",
+    "inputs/cache/2025-07-21.npz": "12af48eafd1a345f24cf060f12a86cc184cd1cdc1429c03c0020b6aff6a2b7e6",
+    "inputs/cache/2025-07-22.npz": "26226d563c79f949ad1d51bb2b9864b18405bcee1655e416cb2df15140f2583b",
+    "inputs/cache/2025-07-23.npz": "a1be398987b11bbb442f452cf95564ff7257d8e432d323e50099c484f13ceb25",
+    "inputs/cache/2025-07-24.npz": "55fd6f58e3cae908f4bee68da6998dcad63287c79a5f3ad363bba6a094fdeaeb",
+    "inputs/cache/2025-07-25.npz": "0198e2aa26ccf508edd9e23fd66abe9feab5766940ea10385afff1049ef25973",
+    "inputs/cache/2025-07-26.npz": "1c79fd67b060c8b3af371a2dadcd0c8ef3b00524e75fc00c1fa0cdac4b0b8867",
+    "inputs/thresholds.csv": "f21beb19bff3d54eb488f4a55e7dafa9b0a7608acc8cb7677d9b25c56c41b209"
+  },
+  "start": "2025-07-06",
+  "end": "2025-07-26",
+  "towns": [
+    {
+      "name": "Khartoum",
+      "latitude": 15.551772,
+      "longitude": 32.532406,
+      "extent": {
+        "west": 32.032406,
+        "east": 33.032406,
+        "south": 15.051772,
+        "north": 16.051772
+      }
+    },
+    {
+      "name": "Kassala",
+      "latitude": 15.450992,
+      "longitude": 36.39998,
+      "extent": {
+        "west": 35.89998,
+        "east": 36.89998,
+        "south": 14.950992,
+        "north": 15.950992
+      }
+    },
+    {
+      "name": "Gedaref",
+      "latitude": 14.034927,
+      "longitude": 35.383444,
+      "extent": {
+        "west": 34.883444,
+        "east": 35.883444,
+        "south": 13.534927,
+        "north": 14.534927
+      }
+    },
+    {
+      "name": "El Obeid",
+      "latitude": 13.184212,
+      "longitude": 30.216694,
+      "extent": {
+        "west": 29.716694,
+        "east": 30.716694,
+        "south": 12.684212,
+        "north": 13.684212
+      }
+    },
+    {
+      "name": "Nyala",
+      "latitude": 12.048882,
+      "longitude": 24.880694,
+      "extent": {
+        "west": 24.380694,
+        "east": 25.380694,
+        "south": 11.548882,
+        "north": 12.548882
+      }
+    }
+  ],
+  "forecast": {
+    "endpoint": "https://data.source.coop",
+    "bucket": "e4drr-project",
+    "prefix": "forecasts/ecmwf-ifs-ea-swio-realized-v3/49r1-jja2025",
+    "variable": "tp",
+    "latitude_order": "descending",
+    "daily_rainfall": "Difference cumulative tp at consecutive 24-hour lead times, then multiply metres by 1000 to obtain mm.",
+    "date_selection": "Select forecast initializations from start_date through end_date; restrict 24-hour valid intervals to the same period."
+  },
+  "domain_validation": {
+    "status": "verified",
+    "forecast": {
+      "source": "forecast",
+      "latitude_order": "descending",
+      "bounds": {
+        "south": -40.0,
+        "north": 40.0,
+        "west": 15.0,
+        "east": 80.0
+      },
+      "towns": [
+        {
+          "town": "Khartoum",
+          "inside": true,
+          "selected_latitude": 15.5,
+          "selected_longitude": 32.5
+        },
+        {
+          "town": "Kassala",
+          "inside": true,
+          "selected_latitude": 15.5,
+          "selected_longitude": 36.5
+        },
+        {
+          "town": "Gedaref",
+          "inside": true,
+          "selected_latitude": 14.0,
+          "selected_longitude": 35.5
+        },
+        {
+          "town": "El Obeid",
+          "inside": true,
+          "selected_latitude": 13.25,
+          "selected_longitude": 30.25
+        },
+        {
+          "town": "Nyala",
+          "inside": true,
+          "selected_latitude": 12.0,
+          "selected_longitude": 25.0
+        }
+      ],
+      "status": "verified from source coordinates"
+    },
+    "cmorph": {
+      "source": "CMORPH",
+      "latitude_order": "ascending",
+      "bounds": {
+        "south": -14.481504311999998,
+        "north": 25.469981112000006,
+        "west": 19.5351656265,
+        "east": 53.949070063499995
+      },
+      "towns": [
+        {
+          "town": "Khartoum",
+          "inside": true,
+          "selected_latitude": 15.573073975999996,
+          "selected_longitude": 32.5586093775
+        },
+        {
+          "town": "Kassala",
+          "inside": true,
+          "selected_latitude": 15.427531223999999,
+          "selected_longitude": 36.4147128345
+        },
+        {
+          "town": "Gedaref",
+          "inside": true,
+          "selected_latitude": 14.044875080000004,
+          "selected_longitude": 35.3961194685
+        },
+        {
+          "town": "El Obeid",
+          "inside": true,
+          "selected_latitude": 13.171618568000007,
+          "selected_longitude": 30.230395969499998
+        },
+        {
+          "town": "Nyala",
+          "inside": true,
+          "selected_latitude": 12.080047928000006,
+          "selected_longitude": 24.8464024635
+        }
+      ],
+      "status": "verified from source coordinates"
+    }
+  },
+  "all_cached_domains_verified": true,
+  "fresh_cloud_domain_check": false,
+  "rainfall_units": "mm in 24 h",
+  "member_criteria": [
+    1,
+    3,
+    5
+  ],
+  "negative_tolerance_mm": 0.05,
+  "available_cells": 1050,
+  "total_cells": 1050,
+  "versions": {
+    "numpy": "2.5.4",
+    "pandas": "3.1.0",
+    "matplotlib": "3.11.2"
+  }
+}

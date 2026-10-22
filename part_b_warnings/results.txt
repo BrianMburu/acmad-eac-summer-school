@@ -1,0 +1,24 @@
+Units: rainfall depth in mm accumulated over each 24-hour interval. Member counts have no rainfall unit.
+Domain checks: verified
+Khartoum: observed annual maxima above the 23.82 mm 2-year level: 12/27 years (44.4%).
+Kassala: observed annual maxima above the 37.95 mm 2-year level: 13/27 years (48.1%).
+
+    town threshold  threshold_mm  member_days_above  total_member_days  fraction_above  max_members_above  members_with_heavy_day_ge  mean_heavy_days_ge
+Khartoum      20mm     20.000000                  0                510        0.000000                  0                          0            0.000000
+Khartoum       2yr     23.821653                  0                510        0.000000                  0                          0            0.000000
+Khartoum      10yr     51.651081                  0                510        0.000000                  0                          0            0.000000
+ Kassala      20mm     20.000000                  5                510        0.009804                  2                          5            0.098039
+ Kassala       2yr     37.945774                  0                510        0.000000                  0                          0            0.000000
+ Kassala      10yr     60.562897                  0                510        0.000000                  0                          0            0.000000
+
+A 2-year annual-maximum threshold has a fitted 50% chance of being exceeded at least once in a year.
+That is not a 50% daily exceedance probability. Under an illustrative independent, identically distributed
+daily model, p = 1 - 0.5**(1/365) = 0.190% per day.
+Real rainfall is seasonal and serially dependent, so that daily number is illustrative, not a calibrated forecast.
+The table quantifies how often the three thresholds are exceeded in this forecast; ensemble member-days
+are correlated predictions and cannot estimate an observed climatological return period.
+The annual threshold is useful for rare-event screening but may miss impactful, more frequent rain.
+Selecting an operational warning requires impact records, forecast verification, and a probability decision rule.
+Daily member counts use strict >; xclim heavy-day counts use >= and describe only the forecast window.
+QC: 13 negative daily totals clipped to zero; minimum raw total -0.030518 mm; tolerance 0.05 mm.
+Nearest forecast and CMORPH grid cells differ in resolution and area; these are not station measurements.

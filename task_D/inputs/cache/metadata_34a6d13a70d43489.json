@@ -1,0 +1,134 @@
+{
+  "domains": {
+    "forecast": {
+      "source": "forecast",
+      "latitude_order": "descending",
+      "bounds": {
+        "south": -40.0,
+        "north": 40.0,
+        "west": 15.0,
+        "east": 80.0
+      },
+      "towns": [
+        {
+          "town": "Khartoum",
+          "inside": true,
+          "selected_latitude": 15.5,
+          "selected_longitude": 32.5
+        },
+        {
+          "town": "Kassala",
+          "inside": true,
+          "selected_latitude": 15.5,
+          "selected_longitude": 36.5
+        },
+        {
+          "town": "Gedaref",
+          "inside": true,
+          "selected_latitude": 14.0,
+          "selected_longitude": 35.5
+        },
+        {
+          "town": "El Obeid",
+          "inside": true,
+          "selected_latitude": 13.25,
+          "selected_longitude": 30.25
+        },
+        {
+          "town": "Nyala",
+          "inside": true,
+          "selected_latitude": 12.0,
+          "selected_longitude": 25.0
+        }
+      ],
+      "status": "verified from source coordinates"
+    },
+    "cmorph": {
+      "source": "CMORPH",
+      "latitude_order": "ascending",
+      "bounds": {
+        "south": -14.481504311999998,
+        "north": 25.469981112000006,
+        "west": 19.5351656265,
+        "east": 53.949070063499995
+      },
+      "towns": [
+        {
+          "town": "Khartoum",
+          "inside": true,
+          "selected_latitude": 15.573073975999996,
+          "selected_longitude": 32.5586093775
+        },
+        {
+          "town": "Kassala",
+          "inside": true,
+          "selected_latitude": 15.427531223999999,
+          "selected_longitude": 36.4147128345
+        },
+        {
+          "town": "Gedaref",
+          "inside": true,
+          "selected_latitude": 14.044875080000004,
+          "selected_longitude": 35.3961194685
+        },
+        {
+          "town": "El Obeid",
+          "inside": true,
+          "selected_latitude": 13.171618568000007,
+          "selected_longitude": 30.230395969499998
+        },
+        {
+          "town": "Nyala",
+          "inside": true,
+          "selected_latitude": 12.080047928000006,
+          "selected_longitude": 24.8464024635
+        }
+      ],
+      "status": "verified from source coordinates"
+    }
+  },
+  "box": {
+    "west": 23.380694,
+    "east": 37.89998,
+    "south": 10.548882,
+    "north": 17.051772
+  },
+  "forecast_dims": [
+    "time",
+    "step",
+    "number",
+    "latitude",
+    "longitude"
+  ],
+  "forecast_shape": [
+    92,
+    65,
+    51,
+    321,
+    261
+  ],
+  "forecast_chunks": [
+    1,
+    1,
+    51,
+    321,
+    261
+  ],
+  "threshold_dims": [
+    "duration",
+    "return_period",
+    "lat",
+    "lon"
+  ],
+  "threshold_chunks": [
+    1,
+    6,
+    550,
+    474
+  ],
+  "metadata_open_seconds": 16.33543395799643,
+  "threshold_read_seconds": 10.837864999994054,
+  "threshold_units": "mm in 24 h",
+  "threshold_matching": "nearest CMORPH pixel per forecast pixel",
+  "threshold_estimated_storage_chunks": 1
+}

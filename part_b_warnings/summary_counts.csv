@@ -1,0 +1,7 @@
+town,threshold,threshold_mm,member_days_above,total_member_days,fraction_above,max_members_above,members_with_heavy_day_ge,mean_heavy_days_ge
+Khartoum,20mm,20.0,0,510,0.0,0,0,0.0
+Khartoum,2yr,23.821653366088867,0,510,0.0,0,0,0.0
+Khartoum,10yr,51.65108108520508,0,510,0.0,0,0,0.0
+Kassala,20mm,20.0,5,510,0.00980392156862745,2,5,0.09803921568627451
+Kassala,2yr,37.94577407836914,0,510,0.0,0,0,0.0
+Kassala,10yr,60.562896728515625,0,510,0.0,0,0,0.0

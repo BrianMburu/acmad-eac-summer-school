@@ -1,0 +1,6 @@
+town,status,threshold_mm,peak_members_above,strongest_start,available_starts,signal_starts,fraction_starts_with_signal,first_signal_start,earliest_lead_days,longest_consecutive_signal_starts
+Khartoum,signal,23.821653366088867,3,2025-07-21,21,19,0.9047619047619048,2025-07-06,10,3
+Kassala,signal,37.94577407836914,2,2025-07-23,21,10,0.47619047619047616,2025-07-06,10,2
+Gedaref,signal,52.983036041259766,1,2025-07-20,21,2,0.09523809523809523,2025-07-20,8,1
+El Obeid,signal,37.18453598022461,4,2025-07-07,21,12,0.5714285714285714,2025-07-06,10,2
+Nyala,signal,32.31674575805664,4,2025-07-07,21,20,0.9523809523809523,2025-07-06,10,5

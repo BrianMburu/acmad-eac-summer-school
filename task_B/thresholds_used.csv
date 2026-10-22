@@ -1,0 +1,16 @@
+town,threshold,threshold_mm,units
+Khartoum,20mm,20.0,mm in 24 h
+Khartoum,2yr,23.821653366088867,mm in 24 h
+Khartoum,10yr,51.65108108520508,mm in 24 h
+Kassala,20mm,20.0,mm in 24 h
+Kassala,2yr,37.94577407836914,mm in 24 h
+Kassala,10yr,60.562896728515625,mm in 24 h
+Gedaref,20mm,20.0,mm in 24 h
+Gedaref,2yr,52.983036041259766,mm in 24 h
+Gedaref,10yr,72.84089660644531,mm in 24 h
+El Obeid,20mm,20.0,mm in 24 h
+El Obeid,2yr,37.18453598022461,mm in 24 h
+El Obeid,10yr,61.681087493896484,mm in 24 h
+Nyala,20mm,20.0,mm in 24 h
+Nyala,2yr,32.31674575805664,mm in 24 h
+Nyala,10yr,50.15428924560547,mm in 24 h

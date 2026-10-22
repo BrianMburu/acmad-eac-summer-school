@@ -1,0 +1,11 @@
+kind,initialization,seconds,estimated_storage_chunks,negative_totals_clipped
+original_cloud_forecast_read,2025-06-10,37.426807791998726,6.0,2543
+current_local_probability_cache,2025-06-10,0.0014325840020319447,0.0,0
+original_cloud_forecast_read,2025-07-01,19.490687291996437,6.0,1868
+current_local_probability_cache,2025-07-01,0.0005630829982692376,0.0,0
+original_cloud_forecast_read,2025-07-22,21.14159762499912,6.0,3218
+current_local_probability_cache,2025-07-22,0.0005142500012880191,0.0,0
+original_cloud_forecast_read,2025-08-12,34.87636850000126,6.0,692
+current_local_probability_cache,2025-08-12,0.0004613330020220019,0.0,0
+original_cmorph_threshold_read,,10.837864999994054,1.0,0
+original_source_metadata_open,,16.33543395799643,,0

@@ -1,0 +1,138 @@
+{
+  "run_utc": "2026-10-22T21:14:31.306780+00:00",
+  "initialization": "2025-07-16 00:00:00",
+  "script_sha256": "26add1a04f1f7399a150071a43aa07f725cf2c15082854243b28b07d6ac1ec2d",
+  "plot_script_sha256": "ae6ad0d8d62271bbcae8ffb60fa0962f2846ce017f3d713046de1a5fe08fc5f7",
+  "grid_sha256": "eec982c46d4e54575aa446069d8112c4f2a86acd599a1e1dbd742fad486bc881",
+  "git_commit": "c873d857d4795f50b37f53c3a2004f0b28c2aa2a",
+  "input_hashes": {
+    "2025-07-16.npz": "4cb145c3294bd699fbe2afc035697982fce00d0345d6c7d7eb3e157db60c2c2f",
+    "source_run_metadata.json": "e6bb0252cd89aecda878cb6a983a58d57899a7cddba1a959013867c1a5c053ab",
+    "thresholds.csv": "f21beb19bff3d54eb488f4a55e7dafa9b0a7608acc8cb7677d9b25c56c41b209",
+    "annual_maxima.csv": "c16696a6b8fe8d1c833acf011d13f06509a7641196c49348c2732695ba6d00b8"
+  },
+  "domain_validation": {
+    "status": "verified",
+    "forecast": {
+      "source": "forecast",
+      "latitude_order": "descending",
+      "bounds": {
+        "south": -40.0,
+        "north": 40.0,
+        "west": 15.0,
+        "east": 80.0
+      },
+      "towns": [
+        {
+          "town": "Khartoum",
+          "inside": true,
+          "selected_latitude": 15.5,
+          "selected_longitude": 32.5
+        },
+        {
+          "town": "Kassala",
+          "inside": true,
+          "selected_latitude": 15.5,
+          "selected_longitude": 36.5
+        },
+        {
+          "town": "Gedaref",
+          "inside": true,
+          "selected_latitude": 14.0,
+          "selected_longitude": 35.5
+        },
+        {
+          "town": "El Obeid",
+          "inside": true,
+          "selected_latitude": 13.25,
+          "selected_longitude": 30.25
+        },
+        {
+          "town": "Nyala",
+          "inside": true,
+          "selected_latitude": 12.0,
+          "selected_longitude": 25.0
+        }
+      ],
+      "status": "verified from source coordinates"
+    },
+    "cmorph": {
+      "source": "CMORPH",
+      "latitude_order": "ascending",
+      "bounds": {
+        "south": -14.481504311999998,
+        "north": 25.469981112000006,
+        "west": 19.5351656265,
+        "east": 53.949070063499995
+      },
+      "towns": [
+        {
+          "town": "Khartoum",
+          "inside": true,
+          "selected_latitude": 15.573073975999996,
+          "selected_longitude": 32.5586093775
+        },
+        {
+          "town": "Kassala",
+          "inside": true,
+          "selected_latitude": 15.427531223999999,
+          "selected_longitude": 36.4147128345
+        },
+        {
+          "town": "Gedaref",
+          "inside": true,
+          "selected_latitude": 14.044875080000004,
+          "selected_longitude": 35.3961194685
+        },
+        {
+          "town": "El Obeid",
+          "inside": true,
+          "selected_latitude": 13.171618568000007,
+          "selected_longitude": 30.230395969499998
+        },
+        {
+          "town": "Nyala",
+          "inside": true,
+          "selected_latitude": 12.080047928000006,
+          "selected_longitude": 24.8464024635
+        }
+      ],
+      "status": "verified from source coordinates"
+    }
+  },
+  "fresh_cloud_domain_check": false,
+  "domain_evidence": "recorded verified extraction metadata",
+  "forecast": {
+    "endpoint": "https://data.source.coop",
+    "bucket": "e4drr-project",
+    "prefix": "forecasts/ecmwf-ifs-ea-swio-realized-v3/49r1-jja2025",
+    "variable": "tp",
+    "latitude_order": "descending",
+    "daily_rainfall": "Difference cumulative tp at consecutive 24-hour lead times, then multiply metres by 1000 to obtain mm.",
+    "date_selection": "Select forecast initializations from start_date through end_date; restrict 24-hour valid intervals to the same period."
+  },
+  "threshold_source": "published CMORPH levels from completed task_A",
+  "rainfall_units": "mm in 24 h",
+  "source_cumulative_units": "m",
+  "count_units": "members",
+  "daily_operator": ">",
+  "xclim_operator": ">=",
+  "negative_totals_clipped": 19,
+  "minimum_raw_daily_mm": -0.030517578125,
+  "negative_tolerance_mm": 0.05,
+  "towns": [
+    "Khartoum",
+    "Kassala",
+    "Gedaref",
+    "El Obeid",
+    "Nyala"
+  ],
+  "checked_daily_counts": 150,
+  "checked_xclim_member_counts": 765,
+  "versions": {
+    "numpy": "2.5.4",
+    "pandas": "3.1.0",
+    "xarray": "2026.9.0",
+    "xclim": "0.62.0"
+  }
+}
