@@ -1,0 +1,11 @@
+.DS_Store
+.venv*/
+__pycache__/
+.matplotlib/
+*.png
+*.csv
+*.nc
+*.npz
+results.txt
+run_metadata.json
+domain_validation.json

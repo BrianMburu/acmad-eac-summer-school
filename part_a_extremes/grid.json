@@ -1,0 +1,101 @@
+{
+  "country": "Sudan",
+  "country_code": "SD",
+  "analysis": "extreme_rainfall",
+  "start_date": "2025-06-01",
+  "end_date": "2025-08-31",
+  "coordinate_reference_system": "EPSG:4326",
+  "coordinate_source": "https://www.geonames.org/search.html?country=SD",
+  "towns": [
+    {
+      "name": "Khartoum",
+      "latitude": 15.551772,
+      "longitude": 32.532406,
+      "extent": {
+        "west": 32.032406,
+        "east": 33.032406,
+        "south": 15.051772,
+        "north": 16.051772
+      }
+    },
+    {
+      "name": "Kassala",
+      "latitude": 15.450992,
+      "longitude": 36.39998,
+      "extent": {
+        "west": 35.89998,
+        "east": 36.89998,
+        "south": 14.950992,
+        "north": 15.950992
+      }
+    },
+    {
+      "name": "Gedaref",
+      "latitude": 14.034927,
+      "longitude": 35.383444,
+      "extent": {
+        "west": 34.883444,
+        "east": 35.883444,
+        "south": 13.534927,
+        "north": 14.534927
+      }
+    },
+    {
+      "name": "El Obeid",
+      "latitude": 13.184212,
+      "longitude": 30.216694,
+      "extent": {
+        "west": 29.716694,
+        "east": 30.716694,
+        "south": 12.684212,
+        "north": 13.684212
+      }
+    },
+    {
+      "name": "Nyala",
+      "latitude": 12.048882,
+      "longitude": 24.880694,
+      "extent": {
+        "west": 24.380694,
+        "east": 25.380694,
+        "south": 11.548882,
+        "north": 12.548882
+      }
+    }
+  ],
+  "extent_convention": "Named bounds in degrees; each town has a 1-degree by 1-degree box centred on its coordinates.",
+  "forecast": {
+    "endpoint": "https://data.source.coop",
+    "bucket": "e4drr-project",
+    "prefix": "forecasts/ecmwf-ifs-ea-swio-realized-v3/49r1-jja2025",
+    "variable": "tp",
+    "latitude_order": "descending",
+    "daily_rainfall": "Difference cumulative tp at consecutive 24-hour lead times, then multiply metres by 1000 to obtain mm.",
+    "date_selection": "Select forecast initializations from start_date through end_date; restrict 24-hour valid intervals to the same period."
+  },
+  "cmorph_reference": {
+    "endpoint": "https://data.source.coop",
+    "bucket": "e4drr-project",
+    "prefix": "observations/cmorph_rp_icechunk",
+    "reference_start_year": 1998,
+    "reference_end_year": 2024,
+    "variable": "return_period_precip",
+    "annual_maxima_variable": "annual_maxima",
+    "duration": "24hr",
+    "return_period_years": 2,
+    "units": "mm",
+    "latitude_order": "ascending"
+  },
+  "comparison": {
+    "threshold_matching": "Nearest CMORPH pixel for each forecast grid point within each town extent.",
+    "exceedance_operator": ">",
+    "probability": "Fraction of ensemble members whose 24-hour rainfall exceeds the local CMORPH threshold.",
+    "required_checks": [
+      "Verify each extent lies within both dataset domains before nearest-point selection; coverage has not yet been checked.",
+      "Require finite forecast rainfall and CMORPH thresholds; mask missing thresholds in probability maps.",
+      "Use descending latitude slices for forecasts and ascending latitude slices for CMORPH.",
+      "Forecast grid spacing is 0.25 degrees and CMORPH is approximately 8 km; nearest-pixel matching is not area-conservative regridding."
+    ],
+    "interpretation": "The threshold is fitted to annual maxima from 1998-2024, not observed June-August 2025 rainfall or a seasonal return level."
+  }
+}

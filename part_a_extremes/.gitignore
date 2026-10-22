@@ -1,0 +1,8 @@
+.venv/
+.venv312/
+.matplotlib/
+__pycache__/
+*.png
+*.csv
+*.nc
+results.txt

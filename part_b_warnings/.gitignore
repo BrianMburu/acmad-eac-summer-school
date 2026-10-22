@@ -1,0 +1,8 @@
+.matplotlib/
+__pycache__/
+*.png
+*.csv
+results.txt
+run_metadata.json
+*.npz
+domain_validation.json
