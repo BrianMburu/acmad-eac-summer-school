@@ -1,0 +1,122 @@
+{
+  "schema_version": 2,
+  "country": "Sudan",
+  "country_code": "SD",
+  "coordinate_reference_system": "EPSG:4326",
+  "coordinate_source": "https://www.geonames.org/search.html?country=SD",
+  "region_extent": {
+    "west": 24.25,
+    "east": 37.0,
+    "south": 11.5,
+    "north": 16.25
+  },
+  "towns": [
+    {
+      "name": "Khartoum",
+      "latitude": 15.551772,
+      "longitude": 32.532406,
+      "extent": {
+        "west": 32.032406,
+        "east": 33.032406,
+        "south": 15.051772,
+        "north": 16.051772
+      }
+    },
+    {
+      "name": "Kassala",
+      "latitude": 15.450992,
+      "longitude": 36.39998,
+      "extent": {
+        "west": 35.89998,
+        "east": 36.89998,
+        "south": 14.950992,
+        "north": 15.950992
+      }
+    },
+    {
+      "name": "Gedaref",
+      "latitude": 14.034927,
+      "longitude": 35.383444,
+      "extent": {
+        "west": 34.883444,
+        "east": 35.883444,
+        "south": 13.534927,
+        "north": 14.534927
+      }
+    },
+    {
+      "name": "El Obeid",
+      "latitude": 13.184212,
+      "longitude": 30.216694,
+      "extent": {
+        "west": 29.716694,
+        "east": 30.716694,
+        "south": 12.684212,
+        "north": 13.684212
+      }
+    },
+    {
+      "name": "Nyala",
+      "latitude": 12.048882,
+      "longitude": 24.880694,
+      "extent": {
+        "west": 24.380694,
+        "east": 25.380694,
+        "south": 11.548882,
+        "north": 12.548882
+      }
+    }
+  ],
+  "start_date": "2025-06-01",
+  "end_date": "2025-08-31",
+  "forecast": {
+    "endpoint": "https://data.source.coop",
+    "bucket": "e4drr-project",
+    "region": "us-east-1",
+    "branch": "main",
+    "prefix": "forecasts/ecmwf-ifs-ea-swio-realized-v3/49r1-jja2025",
+    "snapshot_id": "212QY6MDW3RZ7PWD7A2G",
+    "variable": "tp",
+    "latitude_order": "descending",
+    "available_start_date": "2025-06-01",
+    "available_end_date": "2025-08-31",
+    "start_dates": null
+  },
+  "cmorph_reference": {
+    "endpoint": "https://data.source.coop",
+    "bucket": "e4drr-project",
+    "region": "us-east-1",
+    "branch": "main",
+    "prefix": "observations/cmorph_rp_icechunk",
+    "snapshot_id": "309ZYV7EMDMNPD0EDZK0",
+    "variable": "return_period_precip",
+    "annual_maxima_variable": "annual_maxima",
+    "latitude_order": "ascending",
+    "reference_start_year": 1998,
+    "reference_end_year": 2024
+  },
+  "thresholds": {
+    "durations": [
+      "24hr",
+      "48hr"
+    ],
+    "return_periods_years": [
+      2,
+      10,
+      50
+    ],
+    "map_duration": "24hr",
+    "map_return_period_years": 10,
+    "units_if_missing": "mm"
+  },
+  "comparison": {
+    "duration": "24hr",
+    "return_period_years": 2,
+    "exceedance_operator": ">",
+    "matching": "nearest"
+  },
+  "execution": {
+    "workers": 2,
+    "output_directory": "out/rainfall_thresholds"
+  }
+}

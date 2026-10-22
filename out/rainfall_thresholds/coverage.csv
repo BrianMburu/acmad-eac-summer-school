@@ -1,0 +1,6 @@
+town,requested_latitude,requested_longitude,inside_cmorph,inside_forecast,extent_inside_cmorph,extent_inside_forecast,cmorph_latitude,cmorph_longitude,forecast_latitude,forecast_longitude
+Khartoum,15.551772,32.532406,True,True,True,True,15.573073975999996,32.5586093775,15.5,32.5
+Kassala,15.450992,36.39998,True,True,True,True,15.427531223999999,36.4147128345,15.5,36.5
+Gedaref,14.034927,35.383444,True,True,True,True,14.044875080000004,35.3961194685,14.0,35.5
+El Obeid,13.184212,30.216694,True,True,True,True,13.171618568000007,30.230395969499998,13.25,30.25
+Nyala,12.048882,24.880694,True,True,True,True,12.080047928000006,24.8464024635,12.0,25.0

@@ -1,0 +1,6 @@
+start_date,max_probability,max_probability_latitude,max_probability_longitude,max_probability_forecast_day,cells_at_or_above_threshold,read_seconds
+2025-06-03,0.0000,16.2500,24.2500,1,0,10.9466
+2025-07-11,0.2941,15.2500,26.5000,4,7,8.6022
+2025-08-01,0.2353,14.5000,25.0000,4,8,8.5989
+2025-08-19,0.3922,12.7500,24.2500,5,84,8.9875
+season,0.3922,12.7500,24.2500,5,91,37.1352

@@ -1,0 +1,31 @@
+{
+  "created_utc": "2026-10-22T19:43:48.347873+00:00",
+  "config_sha256": "81f0690b5a22bec44b13953d25abd17542046f10ddaa34171525474770ea78df",
+  "snapshot": "309ZYV7EMDMNPD0EDZK0",
+  "duration": "24hr",
+  "return_period_years": 27,
+  "reference_start_year": 1998,
+  "reference_end_year": 2024,
+  "units": {
+    "annual_maxima": {
+      "source_units": "mm",
+      "effective_units": "mm",
+      "accepted_as_mm_depth": true,
+      "used_workshop_fallback": false
+    },
+    "return_period_precip": {
+      "source_units": "mm",
+      "effective_units": "mm",
+      "accepted_as_mm_depth": true,
+      "used_workshop_fallback": false
+    }
+  },
+  "gumbel_parameter_max_difference_mm": 4.118385220408527e-06,
+  "files": [
+    "04_cmorph_return_periods_khartoum.png",
+    "04_cmorph_return_periods_kassala.png",
+    "04_cmorph_return_periods_gedaref.png",
+    "04_cmorph_return_periods_el_obeid.png",
+    "04_cmorph_return_periods_nyala.png"
+  ]
+}
