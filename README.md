@@ -1,118 +1,182 @@
-# Sudan 24-hour Rainfall Extremes — CMORPH 1998–2024
+# Sudan rainfall extremes
 
-This repository documents an extreme-rainfall analysis for five Sudanese towns using 27 years
-(1998–2024) of observed CMORPH rainfall. For each town in [`grid.json`](grid.json) the workflow
-extracts the annual maximum 24-hour rainfall, reads the fitted Gumbel distribution parameters, and
-produces a three-panel figure with:
+Part A of the ACMAD group project: define extreme rainfall at Khartoum, Kassala,
+Gedaref, El Obeid and Nyala using CMORPH annual maxima from 1998–2024. Other
+subgroups compare these levels with June–August 2025 ECMWF forecasts.
 
-1. the 27-year 24-hour rainfall map with the town marked,
-2. the town's 27 annual maxima with 2-, 10- and 50-year return levels, and
-3. the fitted Gumbel return-level curve against the observed annual maxima.
+See the [observed rainfall threshold task and results](RAINFALL_THRESHOLDS.md) for the assignment,
+acceptance criteria, completed local run and handoff to the other teams.
 
-## Study locations
+## Run locally
 
-`grid.json` defines the five towns and a 1° × 1° box around each one.
+Part A completed locally on 22 October 2026. Extraction took 67 seconds and used
+217 MiB peak RAM. The selected source chunks represent about 66 MiB uncompressed;
+the actual compressed network transfer was not measured. Local execution is the
+supported workflow for this task.
 
-| Town | Latitude | Longitude |
-|---|---:|---:|
-| Khartoum | 15.551772 | 32.532406 |
-| Kassala | 15.450992 | 36.399980 |
-| Gedaref | 14.034927 | 35.383444 |
-| El Obeid | 13.184212 | 30.216694 |
-| Nyala | 12.048882 | 24.880694 |
+Use Python 3.12 or newer with uv. The committed `uv.lock` records the dependency
+versions. Internet is required for installation, inspection and extraction;
+no API keys, AWS credentials or GPU are needed.
 
-## Data
+```sh
+uv sync --locked --group dev --python 3.12
+uv run pytest
+```
 
-The analysis reads the public CMORPH return-period store directly; no credentials are required.
+Run the three stages in order. Review the inspection report before extraction;
+coverage or unit failures stop the run.
 
-| Item | Value |
+```sh
+uv run python -m scripts.rainfall_thresholds inspect
+uv run python -m scripts.rainfall_thresholds extract
+uv run python -m scripts.rainfall_thresholds plots
+```
+
+The default output directory is `out/rainfall_thresholds`. The completed run is retained locally
+in `out/part_a_local`; its result archive is `out/part_a_results.zip`. Generated
+outputs are ignored by Git. To regenerate figures from the completed run offline:
+
+```sh
+uv run python -m scripts.rainfall_thresholds plots --out out/part_a_local --config out/part_a_local/settings_used.json
+```
+
+Use `--out PATH` to choose another output directory for any stage. If settings
+have changed since extraction, plot with the saved `settings_used.json`.
+
+## Settings and methods
+
+**Edit the named settings at the top of `scripts/common.py`.** This is the single
+editable settings source for all subgroups. The data-access and coordinate helpers
+live in `scripts/data_access.py`. Importing common settings needs no scientific
+packages and performs no network access.
+
+| Setting in `common.py` | Current value or purpose |
 |---|---|
-| Endpoint | `https://data.source.coop` |
-| Bucket | `e4drr-project` |
-| Prefix | `observations/cmorph_rp_icechunk` |
-| Record | 1998–2024 (27 years) |
-| Duration | `24hr` |
-| Variables | `annual_maxima`, `return_period_precip`, `dist_location`, `dist_scale` |
-| Stored return periods | 2, 5, 10, 20, 50, 100 years |
+| `REGION` | 24.25–37°E, 11.5–16.25°N |
+| `TOWNS` | Five Sudanese town centres; 1° boxes are derived automatically |
+| `FORECAST_START_DATE`, `FORECAST_END_DATE` | 1 June–31 August 2025 |
+| `FORECAST_START_DATES` | `None`, pending the whole-group decision |
+| `CMORPH_YEARS` | 1998–2024 |
+| `CMORPH_STORE`, `FORECAST_STORE` | Public store locations, coordinate order and pinned snapshots |
+| `DURATIONS`, `RETURN_PERIODS` | 24/48 hours and 2/10/50 years |
+| `MAP_DURATION`, `MAP_RETURN_PERIOD` | 24 hours, 10 years |
+| `WORKERS`, `OUTPUT_DIRECTORY` | Two workers, `out/rainfall_thresholds` |
+| `COMPARISON` | Planned forecast comparison: local 2-year 24-hour level, strict `>` |
 
-The store is an Icechunk/Zarr v3 dataset. Latitude is ascending (−14.5° to 25.5°) and longitude
-runs from about 19.5° to 54.0°, covering all five towns.
+Inspect the effective settings or refresh the JSON export after editing:
 
-## Method
-
-For every town the nearest CMORPH pixel to the coordinates in `grid.json` is selected, and the
-27-year series of annual maxima is read. Return levels follow the Gumbel distribution
-
-```
-x_T = μ − β · ln(−ln(1 − 1/T))
+```sh
+uv run python -m scripts.common
+uv run python -m scripts.common --export grid.json
 ```
 
-where `T` is the return period in years, `μ` is the Gumbel location parameter
-(`dist_location`) and `β` is the scale parameter (`dist_scale`).
+`grid.json` is a **generated export**, not a second settings source. The analysis
+uses `common.py` by default. `--config PATH.json` explicitly loads and validates
+an exported override or a previous run's `settings_used.json`. Legacy saved settings
+are migrated in memory for offline plotting, preserving their original hash check.
 
-The store provides return levels for 2, 5, 10, 20, 50 and 100 years. The 27-year level is not
-stored, so it is computed from `μ` and `β`; the same formula reproduces every stored level exactly.
+Other scripts can import named values directly:
 
-### 27-year 24-hour return levels
+```python
+from scripts.common import REGION, TOWNS, FORECAST_START_DATES, load_config, validate_common
 
-| Town | 2-yr | 5-yr | 10-yr | 20-yr | **27-yr** | 50-yr | 100-yr |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| Khartoum | 23.8 | 40.6 | 51.7 | 62.3 | **66.8** | 76.0 | 86.4 |
-| Kassala | 37.9 | 51.6 | 60.6 | 69.2 | **72.9** | 80.4 | 88.8 |
-| Gedaref | 53.0 | 64.9 | 72.8 | 80.4 | **83.7** | 90.3 | 97.6 |
-| El Obeid | 37.2 | 51.9 | 61.7 | 71.0 | **75.0** | 83.2 | 92.2 |
-| Nyala | 32.3 | 43.0 | 50.2 | 57.0 | **59.9** | 65.8 | 72.4 |
+config = load_config()  # a fresh, validated copy of the named settings
+```
 
-All values are 24-hour rainfall depths in millimetres.
+Shared validation checks required fields, unknown keys, types, finite coordinates,
+complete extent containment, dates, store endpoints and reference years. Errors
+identify the setting to fix. `validate_thresholds(config)` checks this analysis's
+duration and return-period requirements separately. Before forecast rainfall reads,
+B/C/D must call `validate_common(config, require_forecast_dates=True)` and check
+that each selected start actually contains finite data.
 
-Gedaref has the highest 27-year level (83.7 mm); Nyala has the lowest (59.9 mm).
+Store `snapshot_id` values pin the completed run's data. Set a snapshot to `None`
+to follow that store's `branch`; each run records the actual snapshot it reads.
 
-## Figures
+The regional box includes neighbouring areas and is not a Sudan boundary mask.
+Town thresholds use the nearest CMORPH pixel to the town centre. Coverage in both
+stores is checked before nearest-point selection. Forecast rainfall arrays are
+not read by the observed-threshold analysis.
 
-| Town | Figure |
+Part A requires 24-hour and 48-hour durations and 2-, 10-, 50-year return periods.
+If 48hr is absent, inspection lists available durations and stops; agree a second
+duration and update the configuration before rerunning. Forecast start dates
+are still a group decision (`FORECAST_START_DATES` is `None`); B/C/D must check
+finite data for every selected start because unwritten starts may read as NaN.
+
+Annual maxima and return levels must be rainfall **depths** in mm (equivalent
+kg/m² depths are accepted). If units metadata is absent, the explicit E4 mm
+assumption is recorded in inspection; contradictory metadata is rejected. CMORPH
+latitude ascends, forecast latitude descends. Missing town values stop export;
+missing regional threshold pixels remain masked and their count is reported.
+
+The figures compare stored Gumbel levels with the 27 annual maxima, using Weibull
+positions `(n + 1) / rank`. The top three years are labelled and tabulated with
+their departures from the stored curve. These departures are descriptive, not a
+formal goodness-of-fit test. No years are excluded from the required thresholds.
+
+The optional extension uses SciPy's Gumbel maximum-likelihood fits on the full
+series and after removing one largest year (earliest year if tied). It reports the
+50-year change between those two fits and the difference between the full refit
+and the stored level. This separates removal sensitivity from estimator differences.
+
+## Outputs and handoff
+
+| Output | Purpose |
 |---|---|
-| Khartoum | [`out/04_cmorph_return_periods_khartoum.png`](out/04_cmorph_return_periods_khartoum.png) |
-| Kassala | [`out/04_cmorph_return_periods_kassala.png`](out/04_cmorph_return_periods_kassala.png) |
-| Gedaref | [`out/04_cmorph_return_periods_gedaref.png`](out/04_cmorph_return_periods_gedaref.png) |
-| El Obeid | [`out/04_cmorph_return_periods_el_obeid.png`](out/04_cmorph_return_periods_el_obeid.png) |
-| Nyala | [`out/04_cmorph_return_periods_nyala.png`](out/04_cmorph_return_periods_nyala.png) |
+| `inspection.json`, `coverage.csv` | Coverage, available coordinates, units and selected pixels |
+| `thresholds.csv` | 30 rows: town × two durations × three return periods |
+| `annual_maxima.csv` | 270 rows: town × two durations × 27 years |
+| `fit_departures.csv` | Three largest years per town/duration and descriptive departures |
+| `sensitivity_50yr.csv` | Full and leave-largest-out refits, differences in mm and percent |
+| `regional_10yr_24hr.npz` | Small regional map cache for offline plotting |
+| `figures/` | Five town figures and the regional 10-year, 24-hour map |
+| `manifest.json`, `settings_used.json` | Data snapshot IDs, source hashes, versions, checks and settings |
 
-Each figure is a single three-panel plot; one figure is produced per town (five figures total).
+For B/C, filter `thresholds.csv` to `duration == "24hr"`, then join by `town` and
+`return_period_years`. Use `threshold_mm` against forecast **mm in 24 hours**.
+Each row includes requested and selected coordinates, units and reference years.
+For D, town thresholds are insufficient: obtain a local CMORPH threshold at each
+forecast pixel as in E8. Our 10-year map is a reference map, not D's 2-year map.
 
-![Khartoum](out/04_cmorph_return_periods_khartoum.png)
+Do not commit downloaded data or generated result files.
+Share reviewed thresholds/results as a release artifact or another agreed group
+location, with the corresponding source commit. Changes should be reviewed on
+`part-a-thresholds` before merging, as required by the assignment.
 
-## Reproducing the analysis
+## Supplementary 27-year return-period figures
 
-The analysis script is included here as
-[`scripts/cmorph_return_periods.py`](scripts/cmorph_return_periods.py), adapted from exercise 04 of
-[`icpac-igad/python-workshop`](https://github.com/icpac-igad/python-workshop). It reads the towns
-from `grid.json`, loops over them, and writes one PNG per town into `out/`.
+The `erick` branch adds a separate 24-hour analysis that produces one three-panel
+figure per town for the 27-year return level. The script is
+[`scripts/cmorph_return_periods.py`](scripts/cmorph_return_periods.py), adapted from
+workshop exercise E4. It reads the town list from `grid.json` and writes one PNG per
+town to `out/`.
 
-From this repository directory, with the workshop environment available:
+| Town | 27-year 24-hour level (mm) |
+|---|---:|
+| Khartoum | 66.8 |
+| Kassala | 72.9 |
+| Gedaref | 83.7 |
+| El Obeid | 75.0 |
+| Nyala | 59.9 |
 
-```bash
-uv run --project ../python-workshop python scripts/cmorph_return_periods.py
-```
+The 27-year level is not stored by the CMORPH dataset, so it is computed from the
+fitted Gumbel parameters as `x_T = μ − β ln(−ln(1 − 1/T))`. The five PNGs
+`out/04_cmorph_return_periods_<town>.png` are intentionally tracked as deliverables;
+all other files under `out/` remain ignored. See
+[`CMORPH_RETURN_PERIODS.md`](CMORPH_RETURN_PERIODS.md) for the data, method, full
+return-level table, figure links and caveats.
 
-The script accepts `--grid path/to/towns.json` to use a different town list. Results are written as
-`out/04_cmorph_return_periods_<town>.png`; re-running overwrites the existing figures.
+## Limits and workshop sources
 
-Dependencies: Python 3.12+, `icechunk`, `xarray`, `zarr`, `numpy` and `matplotlib`.
+These are annual-extreme thresholds from 1998–2024, not seasonal thresholds or
+observed 2025 rainfall. A 50-year level extrapolates beyond the 27-year record.
+Nearest pixels have different spatial support between CMORPH (~8 km) and forecasts
+(0.25°); satellite estimates also differ from gauges. No forecast verification is
+possible without separate observations for 2025.
 
-## Caveats
-
-- Nearest-pixel sampling is not area-conservative regridding. CMORPH is approximately 8 km and the
-  forecast grid referenced in `grid.json` is 0.25°.
-- The Gumbel fit is based on 27 annual maxima. Return levels are estimates with sampling
-  uncertainty, and the 27-year value is close to the length of the record.
-- The analysis describes 24-hour rainfall extremes, not seasonal (JJA 2025) totals. The threshold is
-  fitted to 1998–2024 observations.
-
-## Repository layout
-
-```
-grid.json   Town coordinates and analysis metadata
-out/        Five generated figures, one per town
-scripts/    Analysis script (cmorph_return_periods.py) and supporting scripts
-README.md   This document
-```
+Adapted selectively from workshop E4 (store access, annual maxima, return levels,
+Weibull positions), E6 (coverage checks), and E3/E8 (chunk awareness and spatial
+selection). Workshop examples are read-only references. Technical references:
+[xarray vectorized indexing](https://docs.xarray.dev/en/stable/user-guide/indexing.html#vectorized-indexing)
+and [SciPy Gumbel distribution](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gumbel_r.html).
