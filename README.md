@@ -442,6 +442,57 @@ subdaily leads. The CMORPH threshold field is also pan-chunked. Inspection
 reports decoded source volume separately from the much smaller regional result;
 compressed transfer and peak RAM cannot be inferred from those estimates.
 
+Part D completed locally on **22 October 2026 (UTC)** from source commit
+`1194b61`. All four starts were available, with ten forecast days each, and
+all **1,040 regional pixels** had valid 2-year thresholds (7.65–93.75 mm).
+The four probability figures contain **40 daily maps**, alongside the single
+frequency figure. An independent NumPy calculation from the raw cumulative
+caches produced **2,121,600 daily rainfall values** and matched all **41,600
+probabilities**, every frequency hit and
+every denominator. It also confirmed that trace cleanup changed no exceedance
+counts. All **132 tests** passed. No notebook run is needed for these completed
+outputs in `out/regional_risk/`.
+
+| Initialization | Highest pixel probability | Pixel/day pairs reaching ≥20% |
+|---|---:|---:|
+| 16 June 2025 | 7.8% (4/51) | 0 |
+| 16 July 2025 | 13.7% (7/51) | 0 |
+| 13 August 2025 | 31.4% (16/51) | 26 |
+| 16 August 2025 | 33.3% (17/51) | 30 |
+
+Across the sample, **47 of 1,040 pixels (4.5%)** reached 20% at least once.
+The maximum frequency was **3 of 40 start/day pairs (7.5%)**, at grid centres
+**24.75°E, 14.5°N; 25°E, 14.5°N; and 36.25°E, 16.25°N**. These locate the
+most persistent signals in the western region north of Nyala and the northeast
+north of Kassala. The largest individual probability, 17/51, occurred in the
+16 August forecast for the 24 hours ending **18 August at 24.25°E, 13°N**
+and **24 August at 24.25°E, 14.25°N**. Other cells can tie a reported daily peak;
+`spatial_summary.csv` records the first maximum in grid order.
+
+At the marked town pixels, only **Kassala** reached 20%: **one of 40 pairs
+(2.5%)**, with 13/51 members for the 24 hours ending 20 August in the
+13 August forecast. The other four town pixels had zero qualifying pairs.
+This four-start sample differs from C's 42-start sample, and the threshold
+matching also differs as described above; these frequencies should not be
+substituted for C's same-valid-day consistency figures.
+
+The first source-reading attempt took **288 seconds (4.8 minutes)** and peaked
+at **572 MiB RAM**. It cached all four regional starts before the last slice's
+trace check stopped the run. After the documented 0.08 mm correction, the
+successful cache replay took **22 seconds**, including metadata access, and
+required no new rainfall reads. `read_timings.csv` explicitly marks these final
+reads as cached; their millisecond durations are local reads, not network timings.
+The original attempt log is retained as `extraction_initial.log`.
+
+The inspected layout touches **44 forecast chunks plus one CMORPH chunk**,
+about **723 MiB decoded**, retaining only **8.9 MiB** of cumulative regional
+forecast values. Reading all 65 leads would touch 260 forecast chunks, about
+4,238 MiB decoded, instead of the 717 MiB forecast selection. These figures
+explain why mapping many pixels adds little source-read cost within the same
+pan chunks, and why daily lead selection matters. They do not measure actual
+compressed network transfer. The successful settings record eight workers;
+the shared worker default remains two.
+
 ## Supplementary 27-year return-period figures
 
 The repository also includes a separate 24-hour analysis that produces one
