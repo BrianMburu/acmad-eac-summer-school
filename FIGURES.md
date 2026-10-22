@@ -35,3 +35,8 @@ Task D's `part_d_risk_maps/analyze.py` generates four
 `probabilities_YYYY-MM-DD.png` figures and `sampled_season_frequency.png` with
 town markers. The default frequency summarizes 20 sampled forecast intervals,
 not the full season. Its metadata records the script hash and Git revision.
+
+The revised Task A is saved as `task_A`. Its `analyze.py` generates five
+`*_return_levels.png` figures and `regional_10yr_24hr.png`, using retained real
+CMORPH inputs. Its metadata records script/configuration/input hashes and the
+Git revision. `results.md` includes explicit observed-versus-fit diagnostics.

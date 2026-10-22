@@ -1,0 +1,8 @@
+inputs/
+.matplotlib/
+__pycache__/
+*.png
+*.csv
+*.nc
+results.md
+run_metadata.json
