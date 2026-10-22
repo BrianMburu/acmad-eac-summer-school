@@ -35,7 +35,7 @@ TOWN_EXTENT_HALF_WIDTH_DEGREES = 0.5  # derive 1° × 1° boxes from the centres
 # Forecast dates are separate from historical CMORPH reference years.
 FORECAST_START_DATE = "2025-06-01"
 FORECAST_END_DATE = "2025-08-31"
-FORECAST_START_DATES = ["2025-06-01", "2025-07-01", "2025-08-01"]  # initial seasonal sample
+FORECAST_START_DATES = ["2025-06-16", "2025-07-16", "2025-08-16"]
 CMORPH_YEARS = (1998, 2024)
 
 # Pinned snapshots reproduce the completed run. Set snapshot_id to None to
@@ -65,8 +65,8 @@ COMPARISON = {"duration": "24hr", "return_period_years": 2,
 WORKERS = 2
 OUTPUT_DIRECTORY = "out/rainfall_thresholds"
 
-# Part B uses two contrasting towns and the shared forecast starts above.
-THRESHOLD_CHOICE = {"towns": ["Khartoum", "Gedaref"], "fixed_threshold_mm": 20.0,
+# Part B compares all configured towns for the selected forecast start above.
+THRESHOLD_CHOICE = {"towns": [town["name"] for town in TOWNS], "fixed_threshold_mm": 20.0,
                     "forecast_units_if_missing": "m",  # cumulative tp, workshop E5/E6
                     "trace_rainfall_mm": 0.04,  # ECMWF guidance for 10-day GRIB packing noise
                     "output_directory": "out/threshold_choice", "max_source_mib": 1024}
@@ -292,10 +292,10 @@ def validate_threshold_choice(config):
             "forecast_units_if_missing", "trace_rainfall_mm", "output_directory", "max_source_mib"))
     towns = settings["towns"]
     names = {town["name"] for town in config["towns"]}
-    if (not isinstance(towns, list) or len(towns) != 2
+    if (not isinstance(towns, list) or not 2 <= len(towns) <= len(names)
             or not all(isinstance(town, str) and town in names for town in towns)
-            or towns[0] == towns[1]):
-        raise ConfigError("threshold_choice.towns: select two distinct configured town names")
+            or len(set(towns)) != len(towns)):
+        raise ConfigError("threshold_choice.towns: select 2–5 distinct configured town names")
     if settings["fixed_threshold_mm"] != 20 or isinstance(settings["fixed_threshold_mm"], bool):
         raise ConfigError("threshold_choice.fixed_threshold_mm: Part B requires 20 mm in 24 h")
     if settings["forecast_units_if_missing"] not in (None, "m", "mm"):

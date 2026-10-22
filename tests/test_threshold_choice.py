@@ -19,6 +19,7 @@ from scripts.rainfall_thresholds import file_sha256, write_json
 def forecast():
     config = load_config()
     config["forecast"]["start_dates"] = ["2025-06-01", "2025-07-01"]
+    config["threshold_choice"]["towns"] = ["Khartoum", "Gedaref"]
     steps = np.array([0, 3, 24, 27, 48], dtype="timedelta64[h]")
     values = np.zeros((2, 5, 51, 4, 4), dtype="float64")
     # Spatial differences catch accidental selection of a lat/lon cross product.
@@ -211,6 +212,27 @@ def test_no_usable_start_fails_instead_of_exporting_zero_counts(tmp_path, foreca
         threshold_choice.run_remote(config, directory, out)
     assert json.loads((out / "run_status.json").read_text())["status"] == "failed"
     assert not (out / "daily_member_counts.csv").exists()
+
+
+def test_all_five_towns_share_reads_and_have_complete_outputs(tmp_path, forecast, monkeypatch):
+    config, ds = forecast
+    config["forecast"]["start_dates"] = ["2025-07-16"]
+    ds = ds.assign_coords(time=pd.to_datetime(["2025-07-16", "2025-07-17"]))
+    config["threshold_choice"]["towns"] = [town["name"] for town in config["towns"]]
+    selected, report = select_town_forecasts(ds, config)
+    assert selected.sizes["town"] == 5
+    assert report["source_chunks_touched"] == 3  # no extra map chunks for five towns
+    directory = handoff(tmp_path, config)
+    monkeypatch.setattr(threshold_choice, "open_store", lambda _: (ds.copy(), "forecast-test"))
+    out = tmp_path / "comparison"
+    threshold_choice.run_remote(config, directory, out)
+    counts = pd.read_csv(out / "daily_member_counts.csv")
+    assert len(counts) == 1 * 5 * 2 * 3
+    assert counts.initialization.unique().tolist() == ["2025-07-16"]
+    assert counts.valid_end.min().startswith("2025-07-17")
+    assert set(counts.town) == set(config["threshold_choice"]["towns"])
+    threshold_choice.plot_outputs(out)
+    assert len(list((out / "figures").glob("*_threshold_choice.png"))) == 5
 
 
 def test_read_budget_refuses_excessive_reads_before_compute(tmp_path, forecast, monkeypatch):

@@ -56,14 +56,14 @@ packages and performs no network access.
 | `REGION` | 24.25–37°E, 11.5–16.25°N |
 | `TOWNS` | Five Sudanese town centres; 1° boxes are derived automatically |
 | `FORECAST_START_DATE`, `FORECAST_END_DATE` | 1 June–31 August 2025 |
-| `FORECAST_START_DATES` | Initial sample: 1 June, 1 July and 1 August 2025; shared by forecast analyses |
+| `FORECAST_START_DATES` | Selected forecast initializations: 16 June, 16 July and 16 August 2025 |
 | `CMORPH_YEARS` | 1998–2024 |
 | `CMORPH_STORE`, `FORECAST_STORE` | Public store locations, coordinate order and pinned snapshots |
 | `DURATIONS`, `RETURN_PERIODS` | 24/48 hours and 2/10/50 years |
 | `MAP_DURATION`, `MAP_RETURN_PERIOD` | 24 hours, 10 years |
 | `WORKERS`, `OUTPUT_DIRECTORY` | Two workers, `out/rainfall_thresholds` |
 | `COMPARISON` | Planned forecast comparison: local 2-year 24-hour level, strict `>` |
-| `THRESHOLD_CHOICE` | Part B: Khartoum/Gedaref, fixed 20 mm threshold, unit fallback, output folder and read budget |
+| `THRESHOLD_CHOICE` | Part B: all five towns, fixed 20 mm threshold, trace correction, unit fallback, output folder and read budget |
 
 Inspect the effective settings or refresh the JSON export after editing:
 
@@ -109,8 +109,8 @@ not read by the observed-threshold analysis.
 
 Part A requires 24-hour and 48-hour durations and 2-, 10-, 50-year return periods.
 If 48hr is absent, inspection lists available durations and stops; agree a second
-duration and update the configuration before rerunning. The initial forecast starts
-sample each month; adjust them when the group selects its event window for C/D.
+duration and update the configuration before rerunning. The selected forecast starts
+are the 16th of June, July and August 2025; extend this to the agreed event window for C/D.
 B/C/D must check finite data for every selected start because unwritten starts may
 read as NaN.
 
@@ -161,12 +161,12 @@ branch was `part-a-thresholds`.
 ## Warning threshold comparison (Part B)
 
 The task asks how much the warning signal changes with the definition of extreme
-rainfall. At **Khartoum and Gedaref**, compare the 51-member daily forecast with
+rainfall. At **Khartoum, Kassala, Gedaref, El Obeid and Nyala**, compare the 51-member daily forecast with
 three thresholds: fixed **20 mm / 24 h**, the town's **2-year 24-hour** level and
-its **10-year 24-hour** level from Part A. Khartoum and Gedaref give contrasting
-historical rainfall levels. The initial forecast starts are **1 June, 1 July and
-1 August 2025**; each has ten forecast days. This is a sample across the season,
-not a count of all June–August rainfall events.
+its **10-year 24-hour** level from Part A. The selected forecasts are initialized on
+**16 June, 16 July and 16 August 2025**, as requested, with ten forecast days per
+start (24-hour intervals ending on the 17th–26th of the corresponding month).
+This sample does not represent all June–August rainfall events.
 
 The script adapts workshop **E5** (daily totals and xclim) and **E6** (local
 thresholds and member counts), using the shared store and coordinate helpers.
@@ -187,7 +187,7 @@ Edit `THRESHOLD_CHOICE` and `FORECAST_START_DATES` in `scripts/common.py`, then
 refresh `grid.json` with `python -m scripts.common --export grid.json`.
 
 Forecast latitude descends. The script checks the domain before nearest-point
-selection and reads both towns together, selecting daily leads before computing.
+selection and reads all five towns together, selecting daily leads before computing.
 The source has no `tp` unit attribute; the explicit, recorded workshop assumption
 is **cumulative metres from initialization**. Convert to mm, then difference
 consecutive 24-hour endpoints. If lead zero is absent, the 24-hour accumulation
@@ -210,7 +210,7 @@ Daily intervals are restricted to the configured season; a valid end time of
 1 September at 00 UTC closes the last August day.
 
 The three-start selection touches **33 source chunks, about 538 MiB decoded**,
-although the selected cumulative point values occupy about 14 KiB. Both towns
+although the selected cumulative point values occupy about 33 KiB. All five towns
 share the same map chunks. The script warns above 256 MiB and refuses reads above
 `THRESHOLD_CHOICE["max_source_mib"]` (initially 1024 MiB). It processes one start
 at a time with `WORKERS` workers. These are decoded source estimates; compressed
@@ -224,7 +224,7 @@ larger selections should be inspected before deciding whether to use Colab/Kaggl
 | `heavy_rain_days.csv` | xclim heavy-day count for every member, start, town and threshold |
 | `daily_rainfall.csv` | Small daily town-series cache in mm per 24 h, with forecast coordinates and valid end times |
 | `cache/*.nc`, `cache/*.json` | Raw cumulative point slices, snapshots/input hashes and checksums; completed reads are reused on retry |
-| `thresholds_used.csv` | Six thresholds and observed annual-maxima exceedance counts for context |
+| `thresholds_used.csv` | Fifteen thresholds and observed annual-maxima exceedance counts for context |
 | `forecast_starts.json` | Used and skipped starts, with reasons |
 | `figures/*_threshold_choice.png` | One figure per town, one panel per usable start, all three threshold curves |
 | `manifest.json`, `settings_used.json` | Source commit/hashes, snapshots, Part A handoff hashes, versions and result checksums |

@@ -1,4 +1,4 @@
-"""Compare three warning thresholds at two towns (group Part B, workshop E5/E6).
+"""Compare three warning thresholds at selected towns (group Part B, workshop E5/E6).
 
 Run inspect, extract, then plots. Only extract reads forecast rainfall; plots is
 offline. All settings are in scripts/common.py; --config loads a saved override.
@@ -183,7 +183,7 @@ def run_remote(config, thresholds_dir, out, inspection_only=False):
                 return
             all_counts, all_heavy, all_summary, all_daily, starts = [], [], [], [], []
             for date in config["forecast"]["start_dates"]:
-                print(f"Reading daily leads at both towns for {date} ...", flush=True)
+                print(f"Reading daily leads at {selected.sizes['town']} towns for {date} ...", flush=True)
                 cumulative = read_start(selected, date, config, out, snapshot, report)
                 daily = daily_rainfall(cumulative, report["units"]["mm_factor"],
                                        config["threshold_choice"]["trace_rainfall_mm"])
@@ -278,7 +278,7 @@ def plot_outputs(out):
         fig.tight_layout()
         fig.savefig(figures / f"{slugify(town)}_threshold_choice.png", dpi=150)
         plt.close(fig)
-    print(f"Saved two threshold-comparison figures in {figures}")
+    print(f"Saved {len(config['threshold_choice']['towns'])} threshold-comparison figures in {figures}")
 
 
 def main():
