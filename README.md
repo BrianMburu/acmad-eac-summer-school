@@ -238,6 +238,46 @@ exceed it. Forecast counts describe this sample of model forecasts, not observed
 daily frequencies or verified warning skill. Separate 2025 observations are needed
 to assess missed events or false alarms.
 
+Part B completed locally on 22 October 2026 for all five towns and all three
+selected starts, with ten days and 51 members in every town/start. It produced
+**450 daily member counts**, **2,295 xclim heavy-day counts**, **45 summary rows**
+and **five comparison figures**. A separate check recomputed the exported daily
+and heavy-day counts from all 7,650 cached rainfall values; every count matched.
+All **97 tests** pass.
+
+The highest daily member count across the three forecasts is shown below
+(out of 51 members; peaks for different thresholds need not occur on the same day):
+
+| Town | Above 20 mm | Above local 2-year level | Above local 10-year level |
+|---|---:|---:|---:|
+| Khartoum | 3 | 2 | 0 |
+| Kassala | 16 | 5 | 1 |
+| Gedaref | 28 | 10 | 7 |
+| El Obeid | 5 | 1 | 0 |
+| Nyala | 12 | 7 | 4 |
+
+August gives the largest counts. Across all five towns and the three ten-day
+forecasts, the fixed threshold yields **252 member-days above 20 mm**, compared
+with **48** above the town-specific 2-year levels and **15** above the 10-year
+levels. These are member-day counts, not independent rain events. At Gedaref,
+using the 2-year level reduces the count from 99 to 10 member-days, illustrating
+how strongly the result depends on the definition.
+
+For the extension, Khartoum's 2-year level is exceeded by 12 of 27 observed annual
+maxima (44.4%), but only 5 of 1,530 forecast member-days (0.33%) in this sample.
+At Gedaref the corresponding figures are 18/27 (66.7%) and 10/1,530 (0.65%).
+This illustrates the difference between annual-maximum and daily warning
+thresholds; it does not estimate observed daily exceedance probabilities or
+validate an operational warning choice.
+
+The July extraction took 263 seconds with 527 MiB peak RAM. The final three-start
+run took 277 seconds with 526 MiB peak RAM, reusing July's cache and reading June
+and August. A notebook was unnecessary for this selection. The scientific
+manifest records source commit `a48b9d2`, the pinned store snapshots, the settings
+and checksums. The three starts required correction of 51 small negative and
+367 small positive packing traces; the most negative daily increment was
+−0.03052 mm, within the recorded 0.04 mm tolerance.
+
 ## Supplementary 27-year return-period figures
 
 The repository also includes a separate 24-hour analysis that produces one
