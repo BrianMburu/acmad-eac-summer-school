@@ -8,8 +8,7 @@ CMORPH return level).  It compares ten 24-hour forecast totals with:
 * the town's CMORPH 24-hour 2-year level, and
 * the town's CMORPH 24-hour 10-year level.
 
-The default initialization is 2025-07-16 (forecast time index 45), matching the
-workshop examples.  One CSV summary and one three-panel figure per town are
+The default initializations are the three 16th-of-month starts in common.py.  One CSV summary and one three-panel figure per town are
 written, plus a combined five-row figure for all towns.
 
 Run:  uv run python -m scripts.forecast_threshold_counts --config grid.json
@@ -30,6 +29,7 @@ import xclim
 
 from scripts.common import (
     ROOT,
+    forecast_settings,
     ConfigError,
     box_inside,
     inside,
@@ -39,10 +39,10 @@ from scripts.common import (
     validate_thresholds,
 )
 from scripts.data_access import domain, open_store, town_indexers
+from scripts.forecast_rainfall import (daily_step_indices, daily_totals, forecast_unit_report,
+                                       validate_starts, validate_ensemble, warn_source_size, write_manifest)
 from scripts.validation import check_town_coverage, units_report
 
-DEFAULT_INIT = "2025-07-16"
-DEFAULT_FIXED_THRESHOLD_MM = 20.0
 DURATION = "24hr"
 OUTPUT_DIRECTORY = ROOT / "out" / "forecast_thresholds"
 THRESHOLD_COLOURS = {
@@ -50,7 +50,6 @@ THRESHOLD_COLOURS = {
     "cmorph_10yr": "crimson",
 }
 FIXED_COLOUR = "steelblue"
-TP_TO_MM = 1000.0
 
 
 def fixed_key(fixed_mm):
@@ -134,50 +133,21 @@ def read_thresholds(observed, config):
 
 
 def forecast_daily_totals(forecast, config, time_index):
-    """Difference whole-day cumulative ``tp`` totals and convert metres to mm."""
+    """Validate and difference whole-day cumulative rainfall, respecting its units."""
     variable = config["forecast"]["variable"]
     if variable not in forecast:
         raise ValueError(f"missing forecast variable: {variable}")
-    lead_h = (pd.to_timedelta(forecast["step"].values) / pd.Timedelta("1h")).astype(int)
-    day_indices = [i for i, hours in enumerate(lead_h) if hours % 24 == 0]
-    if not day_indices or day_indices[0] != 0 or len(day_indices) < 3:
-        raise ValueError("forecast store needs a 0-hour step and at least two whole-day steps")
-
-    indexers = town_indexers(config, "latitude", "longitude")
-    cumulative = (
-        forecast[variable]
-        .isel(time=time_index, step=day_indices)
-        .sel(**indexers, method="nearest")
-        .transpose("step", "number", "town")
-        * TP_TO_MM
-    )
-    cumulative = cumulative.compute()
-    if not np.isfinite(cumulative.values).all():
-        raise ValueError("forecast cumulative totals contain missing or nonfinite values")
-    if (cumulative.values < -1e-6).any():
-        raise ValueError("forecast cumulative totals contain negative values")
-
-    daily = cumulative.diff("step", label="upper").transpose("number", "step", "town")
-    if not np.isfinite(daily.values).all():
-        raise ValueError("forecast daily totals contain missing or nonfinite values")
-    # The cumulative field can differ by a few hundredths of a millimetre
-    # because of float32 storage.  Reject substantive decreases, then remove
-    # the tiny negative rounding artefacts before threshold counting.
-    if float(daily.min()) < -0.1:
-        raise ValueError("forecast daily totals decrease; cumulative tp is not monotonic")
-    if float(daily.min()) < 0:
-        daily = daily.clip(min=0.0)
-
-    init = pd.Timestamp(forecast["time"].values[time_index])
-    days = (lead_h[day_indices][1:] // 24).astype(int)
-    valid = pd.DatetimeIndex([
-        init + pd.Timedelta(hours=int(hours)) for hours in lead_h[day_indices][1:]
-    ])
-    if (days <= 0).any():
-        raise ValueError("forecast daily lead times must be positive whole days")
-    daily = daily.assign_coords(forecast_day=("step", days), valid_time=("step", valid))
-    daily.name = "daily_precipitation"
-    daily.attrs["units"] = "mm/day"
+    validate_ensemble(forecast[variable])
+    forecast_unit_report(forecast[variable], config)
+    _, day_indices = daily_step_indices(forecast["step"].values)
+    init = pd.Timestamp(forecast.time.values[time_index])
+    validate_starts([init], config)
+    warn_source_size(forecast[variable], [init], day_indices)
+    cumulative = (forecast[variable].isel(time=time_index, step=day_indices)
+                  .sel(**town_indexers(config, "latitude", "longitude"), method="nearest"))
+    daily = daily_totals(cumulative.compute(num_workers=config["execution"]["workers"]), config)
+    if daily is not None:
+        daily = daily.transpose("number", "step", "town")
     return daily, init
 
 
@@ -368,57 +338,64 @@ def write_table(table, out):
     return path
 
 
-def run(config, out, init=DEFAULT_INIT, fixed_mm=DEFAULT_FIXED_THRESHOLD_MM):
-    """Read both stores, count members, and write the figures and summary."""
+def run(config, out, init=None, fixed_mm=None):
+    """Compare all shared starts, or an explicit single-start override."""
+    settings = forecast_settings(config)
+    fixed_mm = settings["fixed_threshold_mm"] if fixed_mm is None else fixed_mm
     if not np.isfinite(fixed_mm) or fixed_mm <= 0:
         raise ValueError("fixed threshold must be a finite number greater than zero")
-
+    validate_common(config, require_forecast_dates=init is None)
+    starts = validate_starts([init] if init is not None else config["forecast"]["start_dates"], config)
+    out = Path(out)
+    tables, town_paths, overview_paths, kept, skipped, rainfall = [], [], [], [], [], []
     forecast, forecast_snapshot = open_store(config["forecast"])
     try:
         check_forecast_coverage(forecast, config)
-        time_index, init_time = forecast_time_index(forecast, init)
+        _, daily_indices = daily_step_indices(forecast.step.values)
+        warn_source_size(forecast[config["forecast"]["variable"]], starts, daily_indices)
         observed, observed_snapshot = open_store(config["cmorph_reference"])
         try:
             levels, units = read_thresholds(observed, config)
         finally:
             observed.close()
-        daily, init_time = forecast_daily_totals(forecast, config, time_index)
+        levels = threshold_grid(levels, config, fixed_mm)
+        for start in starts:
+            time_index, init_time = forecast_time_index(forecast, start)
+            daily, _ = forecast_daily_totals(forecast, config, time_index)
+            if daily is None:
+                skipped.append(start)
+                continue
+            kept.append(start)
+            rainfall.append(daily)
+            counts = count_members(daily, levels)
+            tables.append(build_table(daily, levels, counts, config, init_time, fixed_mm))
+            target = out / start.strftime("%Y%m%d") if len(starts) > 1 else out
+            target.mkdir(parents=True, exist_ok=True)
+            town_paths.extend(plot_town(counts, levels, config, init_time, fixed_mm, town["name"], target)
+                              for town in config["towns"])
+            overview_paths.append(plot_overview(counts, levels, config, init_time, fixed_mm, target))
     finally:
         forecast.close()
-
-    levels = threshold_grid(levels, config, fixed_mm)
-    counts = count_members(daily, levels)
-    table = build_table(daily, levels, counts, config, init_time, fixed_mm)
-
-    out = Path(out)
-    out.mkdir(parents=True, exist_ok=True)
+    if not tables:
+        raise ValueError("all selected forecast starts are missing (all NaN)")
+    table = pd.concat(tables, ignore_index=True)
     table_path = write_table(table, out)
-    town_paths = [
-        plot_town(counts, levels, config, init_time, fixed_mm, town["name"], out)
-        for town in config["towns"]
-    ]
-    overview_path = plot_overview(counts, levels, config, init_time, fixed_mm, out)
-    return {
-        "forecast_snapshot": forecast_snapshot,
-        "observed_snapshot": observed_snapshot,
-        "init": init_time,
-        "time_index": time_index,
-        "units": units,
-        "table": table,
-        "table_path": table_path,
-        "town_paths": town_paths,
-        "overview_path": overview_path,
-    }
+    manifest_path = write_manifest(out, config, forecast_snapshot, observed_snapshot,
+                                   starts, kept, skipped, rainfall, {"fixed_threshold_mm": fixed_mm})
+    return {"forecast_snapshot": forecast_snapshot, "observed_snapshot": observed_snapshot,
+            "init": kept[-1], "time_index": time_index, "starts": kept, "skipped_starts": skipped,
+            "units": units, "table": table, "table_path": table_path,
+            "town_paths": town_paths, "overview_path": overview_paths[-1],
+            "overview_paths": overview_paths, "manifest_path": manifest_path}
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", "--grid", dest="config", type=Path,
                         help="JSON settings override or grid.json export; defaults to scripts/common.py")
-    parser.add_argument("--init", default=DEFAULT_INIT,
-                        help=f"forecast initialization date (default: {DEFAULT_INIT})")
-    parser.add_argument("--fixed-threshold-mm", type=float, default=DEFAULT_FIXED_THRESHOLD_MM,
-                        help=f"fixed daily threshold in mm/day (default: {DEFAULT_FIXED_THRESHOLD_MM:g})")
+    parser.add_argument("--init", help="single-start override; default: all shared forecast.start_dates")
+    parser.add_argument("--fixed-threshold-mm", type=float, default=None,
+                        help="fixed daily threshold in mm/day; default: common.py fixed_threshold_mm")
     parser.add_argument("--out", type=Path, default=OUTPUT_DIRECTORY,
                         help=f"output directory (default: {OUTPUT_DIRECTORY})")
     args = parser.parse_args(argv)
@@ -437,7 +414,7 @@ def main(argv=None):
 
     print(f"forecast snapshot {result['forecast_snapshot']}; "
           f"CMORPH snapshot {result['observed_snapshot']}")
-    print(f"init {result['init']:%Y-%m-%d} (time index {result['time_index']}); "
+    print(f"starts {[str(pd.Timestamp(s).date()) for s in result['starts']]}; "
           f"{result['table']['town'].nunique()} towns; "
           f"xclim {xclim.__version__}; {time.time() - started:.1f}s")
     print(f"CMORPH {DURATION} units: {result['units']['effective_units']}")

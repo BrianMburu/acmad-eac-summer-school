@@ -115,7 +115,8 @@ def test_threshold_rules_are_separate_from_shared_rules():
 
 def test_forecast_reads_require_explicit_start_dates():
     config = load_config()
-    validate_common(config)
+    validate_common(config, require_forecast_dates=True)
+    config["forecast"]["start_dates"] = None
     with pytest.raises(ConfigError, match="select start dates"):
         validate_common(config, require_forecast_dates=True)
     config["forecast"]["start_dates"] = ["2025-06-01", "2025-08-31"]
@@ -155,7 +156,7 @@ def test_common_cli_needs_no_scientific_imports_and_exports_snapshot(tmp_path):
     assert load_config(target) == load_config()
     result = subprocess.run([sys.executable, "-m", "scripts.common"], cwd=ROOT,
                             check=True, capture_output=True, text=True)
-    assert "NOT SELECTED" in result.stdout
+    assert "2025-06-16" in result.stdout
 
 
 def test_json_load_errors_identify_file(tmp_path):

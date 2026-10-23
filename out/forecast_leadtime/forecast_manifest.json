@@ -1,0 +1,809 @@
+{
+  "config_sha256": "06cbd5d94c01f9d40c195e09792791f201ebb22781575a6c90aa1f3315328c83",
+  "settings": {
+    "schema_version": 2,
+    "country": "Sudan",
+    "country_code": "SD",
+    "coordinate_reference_system": "EPSG:4326",
+    "coordinate_source": "https://www.geonames.org/search.html?country=SD",
+    "region_extent": {
+      "west": 24.25,
+      "east": 37.0,
+      "south": 11.5,
+      "north": 16.25
+    },
+    "towns": [
+      {
+        "name": "Khartoum",
+        "latitude": 15.551772,
+        "longitude": 32.532406,
+        "extent": {
+          "west": 32.032406,
+          "east": 33.032406,
+          "south": 15.051772,
+          "north": 16.051772
+        }
+      },
+      {
+        "name": "Kassala",
+        "latitude": 15.450992,
+        "longitude": 36.39998,
+        "extent": {
+          "west": 35.89998,
+          "east": 36.89998,
+          "south": 14.950992,
+          "north": 15.950992
+        }
+      },
+      {
+        "name": "Gedaref",
+        "latitude": 14.034927,
+        "longitude": 35.383444,
+        "extent": {
+          "west": 34.883444,
+          "east": 35.883444,
+          "south": 13.534927,
+          "north": 14.534927
+        }
+      },
+      {
+        "name": "El Obeid",
+        "latitude": 13.184212,
+        "longitude": 30.216694,
+        "extent": {
+          "west": 29.716694,
+          "east": 30.716694,
+          "south": 12.684212,
+          "north": 13.684212
+        }
+      },
+      {
+        "name": "Nyala",
+        "latitude": 12.048882,
+        "longitude": 24.880694,
+        "extent": {
+          "west": 24.380694,
+          "east": 25.380694,
+          "south": 11.548882,
+          "north": 12.548882
+        }
+      }
+    ],
+    "start_date": "2025-06-01",
+    "end_date": "2025-08-31",
+    "forecast": {
+      "endpoint": "https://data.source.coop",
+      "bucket": "e4drr-project",
+      "region": "us-east-1",
+      "branch": "main",
+      "prefix": "forecasts/ecmwf-ifs-ea-swio-realized-v3/49r1-jja2025",
+      "snapshot_id": "212QY6MDW3RZ7PWD7A2G",
+      "variable": "tp",
+      "latitude_order": "descending",
+      "available_start_date": "2025-06-01",
+      "available_end_date": "2025-08-31",
+      "start_dates": [
+        "2025-06-16",
+        "2025-07-16",
+        "2025-08-16"
+      ]
+    },
+    "cmorph_reference": {
+      "endpoint": "https://data.source.coop",
+      "bucket": "e4drr-project",
+      "region": "us-east-1",
+      "branch": "main",
+      "prefix": "observations/cmorph_rp_icechunk",
+      "snapshot_id": "309ZYV7EMDMNPD0EDZK0",
+      "variable": "return_period_precip",
+      "annual_maxima_variable": "annual_maxima",
+      "latitude_order": "ascending",
+      "reference_start_year": 1998,
+      "reference_end_year": 2024
+    },
+    "thresholds": {
+      "durations": [
+        "24hr",
+        "48hr"
+      ],
+      "return_periods_years": [
+        2,
+        10,
+        50
+      ],
+      "map_duration": "24hr",
+      "map_return_period_years": 10,
+      "units_if_missing": "mm"
+    },
+    "comparison": {
+      "duration": "24hr",
+      "return_period_years": 2,
+      "exceedance_operator": ">",
+      "matching": "nearest"
+    },
+    "forecast_analysis": {
+      "units_if_missing": "m",
+      "trace_rainfall_mm": 0.08,
+      "fixed_threshold_mm": 20.0,
+      "lead_time_windows": [
+        {
+          "start": "2025-06-09",
+          "end": "2025-06-22"
+        },
+        {
+          "start": "2025-07-09",
+          "end": "2025-07-22"
+        },
+        {
+          "start": "2025-08-09",
+          "end": "2025-08-22"
+        }
+      ],
+      "risk_start_dates": [
+        "2025-06-16",
+        "2025-07-16",
+        "2025-08-13",
+        "2025-08-16"
+      ],
+      "risk_forecast_days": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "probability_threshold": 0.2
+    },
+    "execution": {
+      "workers": 2,
+      "output_directory": "out/rainfall_thresholds"
+    }
+  },
+  "forecast_snapshot": "212QY6MDW3RZ7PWD7A2G",
+  "cmorph_snapshot": "309ZYV7EMDMNPD0EDZK0",
+  "requested_starts": [
+    "2025-06-09",
+    "2025-06-10",
+    "2025-06-11",
+    "2025-06-12",
+    "2025-06-13",
+    "2025-06-14",
+    "2025-06-15",
+    "2025-06-16",
+    "2025-06-17",
+    "2025-06-18",
+    "2025-06-19",
+    "2025-06-20",
+    "2025-06-21",
+    "2025-06-22",
+    "2025-07-09",
+    "2025-07-10",
+    "2025-07-11",
+    "2025-07-12",
+    "2025-07-13",
+    "2025-07-14",
+    "2025-07-15",
+    "2025-07-16",
+    "2025-07-17",
+    "2025-07-18",
+    "2025-07-19",
+    "2025-07-20",
+    "2025-07-21",
+    "2025-07-22",
+    "2025-08-09",
+    "2025-08-10",
+    "2025-08-11",
+    "2025-08-12",
+    "2025-08-13",
+    "2025-08-14",
+    "2025-08-15",
+    "2025-08-16",
+    "2025-08-17",
+    "2025-08-18",
+    "2025-08-19",
+    "2025-08-20",
+    "2025-08-21",
+    "2025-08-22"
+  ],
+  "kept_starts": [
+    "2025-06-09",
+    "2025-06-10",
+    "2025-06-11",
+    "2025-06-12",
+    "2025-06-13",
+    "2025-06-14",
+    "2025-06-15",
+    "2025-06-16",
+    "2025-06-17",
+    "2025-06-18",
+    "2025-06-19",
+    "2025-06-20",
+    "2025-06-21",
+    "2025-06-22",
+    "2025-07-09",
+    "2025-07-10",
+    "2025-07-11",
+    "2025-07-12",
+    "2025-07-13",
+    "2025-07-14",
+    "2025-07-15",
+    "2025-07-16",
+    "2025-07-17",
+    "2025-07-18",
+    "2025-07-19",
+    "2025-07-20",
+    "2025-07-21",
+    "2025-07-22",
+    "2025-08-09",
+    "2025-08-10",
+    "2025-08-11",
+    "2025-08-12",
+    "2025-08-13",
+    "2025-08-14",
+    "2025-08-15",
+    "2025-08-16",
+    "2025-08-17",
+    "2025-08-18",
+    "2025-08-19",
+    "2025-08-20",
+    "2025-08-21",
+    "2025-08-22"
+  ],
+  "skipped_all_nan_starts": [],
+  "rainfall_validation": [
+    {
+      "source_units": null,
+      "effective_units": "m",
+      "mm_factor": 1000.0,
+      "used_workshop_fallback": true,
+      "accumulation": "since initialization",
+      "units": "mm/day",
+      "trace_rainfall_mm": 0.08,
+      "minimum_uncorrected_daily_mm": -0.0152587890625,
+      "negative_traces_zeroed": 7,
+      "positive_traces_zeroed": 87,
+      "exceedance_operator": ">",
+      "per_start_validation": [
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.0152587890625,
+          "negative_traces_zeroed": 7,
+          "positive_traces_zeroed": 87
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.0152587890625,
+          "negative_traces_zeroed": 7,
+          "positive_traces_zeroed": 94
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.0152587890625,
+          "negative_traces_zeroed": 5,
+          "positive_traces_zeroed": 123
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.030517578125,
+          "negative_traces_zeroed": 19,
+          "positive_traces_zeroed": 120
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.030517578125,
+          "negative_traces_zeroed": 13,
+          "positive_traces_zeroed": 114
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.0152587890625,
+          "negative_traces_zeroed": 13,
+          "positive_traces_zeroed": 196
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.0152587890625,
+          "negative_traces_zeroed": 13,
+          "positive_traces_zeroed": 199
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.030517578125,
+          "negative_traces_zeroed": 22,
+          "positive_traces_zeroed": 254
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.0152587890625,
+          "negative_traces_zeroed": 24,
+          "positive_traces_zeroed": 255
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.0152587890625,
+          "negative_traces_zeroed": 27,
+          "positive_traces_zeroed": 252
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.0152587890625,
+          "negative_traces_zeroed": 18,
+          "positive_traces_zeroed": 262
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.0152587890625,
+          "negative_traces_zeroed": 36,
+          "positive_traces_zeroed": 235
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.0152587890625,
+          "negative_traces_zeroed": 15,
+          "positive_traces_zeroed": 240
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.0152587890625,
+          "negative_traces_zeroed": 9,
+          "positive_traces_zeroed": 226
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.00762939453125,
+          "negative_traces_zeroed": 5,
+          "positive_traces_zeroed": 168
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.0152587890625,
+          "negative_traces_zeroed": 3,
+          "positive_traces_zeroed": 163
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.0152587890625,
+          "negative_traces_zeroed": 4,
+          "positive_traces_zeroed": 174
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.0152587890625,
+          "negative_traces_zeroed": 5,
+          "positive_traces_zeroed": 174
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.0152587890625,
+          "negative_traces_zeroed": 2,
+          "positive_traces_zeroed": 150
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.0152587890625,
+          "negative_traces_zeroed": 10,
+          "positive_traces_zeroed": 157
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.030517578125,
+          "negative_traces_zeroed": 12,
+          "positive_traces_zeroed": 205
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.030517578125,
+          "negative_traces_zeroed": 19,
+          "positive_traces_zeroed": 234
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.030517578125,
+          "negative_traces_zeroed": 8,
+          "positive_traces_zeroed": 210
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.0152587890625,
+          "negative_traces_zeroed": 6,
+          "positive_traces_zeroed": 167
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.030517578125,
+          "negative_traces_zeroed": 13,
+          "positive_traces_zeroed": 189
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.0152587890625,
+          "negative_traces_zeroed": 6,
+          "positive_traces_zeroed": 216
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.0152587890625,
+          "negative_traces_zeroed": 7,
+          "positive_traces_zeroed": 179
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.0152587890625,
+          "negative_traces_zeroed": 12,
+          "positive_traces_zeroed": 228
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.00762939453125,
+          "negative_traces_zeroed": 1,
+          "positive_traces_zeroed": 163
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.00762939453125,
+          "negative_traces_zeroed": 2,
+          "positive_traces_zeroed": 136
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": 0.0,
+          "negative_traces_zeroed": 0,
+          "positive_traces_zeroed": 99
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.0152587890625,
+          "negative_traces_zeroed": 2,
+          "positive_traces_zeroed": 118
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.0152587890625,
+          "negative_traces_zeroed": 6,
+          "positive_traces_zeroed": 134
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.00762939453125,
+          "negative_traces_zeroed": 5,
+          "positive_traces_zeroed": 132
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.0152587890625,
+          "negative_traces_zeroed": 10,
+          "positive_traces_zeroed": 144
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.0152587890625,
+          "negative_traces_zeroed": 10,
+          "positive_traces_zeroed": 124
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.00762939453125,
+          "negative_traces_zeroed": 6,
+          "positive_traces_zeroed": 127
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.00762939453125,
+          "negative_traces_zeroed": 2,
+          "positive_traces_zeroed": 120
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.00762939453125,
+          "negative_traces_zeroed": 2,
+          "positive_traces_zeroed": 82
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.00762939453125,
+          "negative_traces_zeroed": 1,
+          "positive_traces_zeroed": 91
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.0152587890625,
+          "negative_traces_zeroed": 3,
+          "positive_traces_zeroed": 91
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "mm/day",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.0152587890625,
+          "negative_traces_zeroed": 4,
+          "positive_traces_zeroed": 101
+        }
+      ]
+    }
+  ],
+  "analysis_parameters": {
+    "windows": [
+      {
+        "start": "2025-06-09",
+        "end": "2025-06-22"
+      },
+      {
+        "start": "2025-07-09",
+        "end": "2025-07-22"
+      },
+      {
+        "start": "2025-08-09",
+        "end": "2025-08-22"
+      }
+    ],
+    "probability_threshold": 0.2
+  },
+  "source_sha256": {
+    "scripts/__init__.py": "c0bde83a874510a8ec5e46892a1c6e1642ae65e05038ab4e483d8ed2f72c354f",
+    "scripts/cmorph_return_periods.py": "bb41d73cc9c2971696a931c2dabc4c6dbcffbda4382694018741218c76392bcb",
+    "scripts/common.py": "7dfa8f3404c01b707a0eb4fd531663406d7d7d333dfbaa99bd67f66b92cab40a",
+    "scripts/data_access.py": "7b330b28f13607b444064545485ee5bf12dcee2825dcefd5033fbd6603d01bc6",
+    "scripts/forecast_rainfall.py": "da2dc0a292f49a7a8a4719bf2022271c0c063b1c7b45d8b3e43ec6af32f17692",
+    "scripts/forecast_signal_leadtime.py": "3c3ef7f09ede230880cd89ca13c647993497603bced42236763dbf125a1aeeb7",
+    "scripts/forecast_threshold_counts.py": "de51809c4609c71a376c7f9af29b97ec923b62a3bcf5b3496663983ecfdb30d3",
+    "scripts/rainfall_thresholds.py": "314cb3bb766ea99a7f521e076f81a6dbfd15b3b088ccb7fc9192232a7c334c1a",
+    "scripts/region_risk_maps.py": "5973cf48d947bb7a80b852fa24159af768decd0b7a1d9b417c5becf344aa345a",
+    "scripts/return_levels.py": "768b1d8a944fa8e3531bde0e857bb9b169a4765aaaa6f097068258e5f78e5b61",
+    "scripts/validation.py": "39e18a9689931c27c23844a32cb775b76badc34d04947093e335cb0bf98ba07b"
+  }
+}

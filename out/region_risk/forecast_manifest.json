@@ -1,0 +1,305 @@
+{
+  "config_sha256": "06cbd5d94c01f9d40c195e09792791f201ebb22781575a6c90aa1f3315328c83",
+  "settings": {
+    "schema_version": 2,
+    "country": "Sudan",
+    "country_code": "SD",
+    "coordinate_reference_system": "EPSG:4326",
+    "coordinate_source": "https://www.geonames.org/search.html?country=SD",
+    "region_extent": {
+      "west": 24.25,
+      "east": 37.0,
+      "south": 11.5,
+      "north": 16.25
+    },
+    "towns": [
+      {
+        "name": "Khartoum",
+        "latitude": 15.551772,
+        "longitude": 32.532406,
+        "extent": {
+          "west": 32.032406,
+          "east": 33.032406,
+          "south": 15.051772,
+          "north": 16.051772
+        }
+      },
+      {
+        "name": "Kassala",
+        "latitude": 15.450992,
+        "longitude": 36.39998,
+        "extent": {
+          "west": 35.89998,
+          "east": 36.89998,
+          "south": 14.950992,
+          "north": 15.950992
+        }
+      },
+      {
+        "name": "Gedaref",
+        "latitude": 14.034927,
+        "longitude": 35.383444,
+        "extent": {
+          "west": 34.883444,
+          "east": 35.883444,
+          "south": 13.534927,
+          "north": 14.534927
+        }
+      },
+      {
+        "name": "El Obeid",
+        "latitude": 13.184212,
+        "longitude": 30.216694,
+        "extent": {
+          "west": 29.716694,
+          "east": 30.716694,
+          "south": 12.684212,
+          "north": 13.684212
+        }
+      },
+      {
+        "name": "Nyala",
+        "latitude": 12.048882,
+        "longitude": 24.880694,
+        "extent": {
+          "west": 24.380694,
+          "east": 25.380694,
+          "south": 11.548882,
+          "north": 12.548882
+        }
+      }
+    ],
+    "start_date": "2025-06-01",
+    "end_date": "2025-08-31",
+    "forecast": {
+      "endpoint": "https://data.source.coop",
+      "bucket": "e4drr-project",
+      "region": "us-east-1",
+      "branch": "main",
+      "prefix": "forecasts/ecmwf-ifs-ea-swio-realized-v3/49r1-jja2025",
+      "snapshot_id": "212QY6MDW3RZ7PWD7A2G",
+      "variable": "tp",
+      "latitude_order": "descending",
+      "available_start_date": "2025-06-01",
+      "available_end_date": "2025-08-31",
+      "start_dates": [
+        "2025-06-16",
+        "2025-07-16",
+        "2025-08-16"
+      ]
+    },
+    "cmorph_reference": {
+      "endpoint": "https://data.source.coop",
+      "bucket": "e4drr-project",
+      "region": "us-east-1",
+      "branch": "main",
+      "prefix": "observations/cmorph_rp_icechunk",
+      "snapshot_id": "309ZYV7EMDMNPD0EDZK0",
+      "variable": "return_period_precip",
+      "annual_maxima_variable": "annual_maxima",
+      "latitude_order": "ascending",
+      "reference_start_year": 1998,
+      "reference_end_year": 2024
+    },
+    "thresholds": {
+      "durations": [
+        "24hr",
+        "48hr"
+      ],
+      "return_periods_years": [
+        2,
+        10,
+        50
+      ],
+      "map_duration": "24hr",
+      "map_return_period_years": 10,
+      "units_if_missing": "mm"
+    },
+    "comparison": {
+      "duration": "24hr",
+      "return_period_years": 2,
+      "exceedance_operator": ">",
+      "matching": "nearest"
+    },
+    "forecast_analysis": {
+      "units_if_missing": "m",
+      "trace_rainfall_mm": 0.08,
+      "fixed_threshold_mm": 20.0,
+      "lead_time_windows": [
+        {
+          "start": "2025-06-09",
+          "end": "2025-06-22"
+        },
+        {
+          "start": "2025-07-09",
+          "end": "2025-07-22"
+        },
+        {
+          "start": "2025-08-09",
+          "end": "2025-08-22"
+        }
+      ],
+      "risk_start_dates": [
+        "2025-06-16",
+        "2025-07-16",
+        "2025-08-13",
+        "2025-08-16"
+      ],
+      "risk_forecast_days": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "probability_threshold": 0.2
+    },
+    "execution": {
+      "workers": 2,
+      "output_directory": "out/rainfall_thresholds"
+    }
+  },
+  "forecast_snapshot": "212QY6MDW3RZ7PWD7A2G",
+  "cmorph_snapshot": "309ZYV7EMDMNPD0EDZK0",
+  "requested_starts": [
+    "2025-06-16",
+    "2025-07-16",
+    "2025-08-13",
+    "2025-08-16"
+  ],
+  "kept_starts": [
+    "2025-06-16",
+    "2025-07-16",
+    "2025-08-13",
+    "2025-08-16"
+  ],
+  "skipped_all_nan_starts": [],
+  "rainfall_validation": [
+    {
+      "source_units": null,
+      "effective_units": "m",
+      "mm_factor": 1000.0,
+      "used_workshop_fallback": true,
+      "accumulation": "since initialization",
+      "units": "1",
+      "trace_rainfall_mm": 0.08,
+      "minimum_uncorrected_daily_mm": -0.030517578125,
+      "negative_traces_zeroed": 3431,
+      "positive_traces_zeroed": 47090,
+      "long_name": "Precipitation depth for return period",
+      "description": "Precipitation accumulation expected to be exceeded once per return period (Gumbel method-of-moments)",
+      "duration": "24hr",
+      "return_period": 2,
+      "probability_threshold": "fraction of ensemble members above threshold",
+      "threshold": "CMORPH 24hr 2-year level",
+      "per_start_validation": [
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "1",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.030517578125,
+          "negative_traces_zeroed": 3431,
+          "positive_traces_zeroed": 47090,
+          "long_name": "Precipitation depth for return period",
+          "description": "Precipitation accumulation expected to be exceeded once per return period (Gumbel method-of-moments)",
+          "duration": "24hr",
+          "return_period": 2,
+          "probability_threshold": "fraction of ensemble members above threshold",
+          "threshold": "CMORPH 24hr 2-year level"
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "1",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.030517578125,
+          "negative_traces_zeroed": 5150,
+          "positive_traces_zeroed": 55001,
+          "long_name": "Precipitation depth for return period",
+          "description": "Precipitation accumulation expected to be exceeded once per return period (Gumbel method-of-moments)",
+          "duration": "24hr",
+          "return_period": 2,
+          "probability_threshold": "fraction of ensemble members above threshold",
+          "threshold": "CMORPH 24hr 2-year level"
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "1",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.030517578125,
+          "negative_traces_zeroed": 2005,
+          "positive_traces_zeroed": 34487,
+          "long_name": "Precipitation depth for return period",
+          "description": "Precipitation accumulation expected to be exceeded once per return period (Gumbel method-of-moments)",
+          "duration": "24hr",
+          "return_period": 2,
+          "probability_threshold": "fraction of ensemble members above threshold",
+          "threshold": "CMORPH 24hr 2-year level"
+        },
+        {
+          "source_units": null,
+          "effective_units": "m",
+          "mm_factor": 1000.0,
+          "used_workshop_fallback": true,
+          "accumulation": "since initialization",
+          "units": "1",
+          "trace_rainfall_mm": 0.08,
+          "minimum_uncorrected_daily_mm": -0.0457763671875,
+          "negative_traces_zeroed": 3832,
+          "positive_traces_zeroed": 39269,
+          "long_name": "Precipitation depth for return period",
+          "description": "Precipitation accumulation expected to be exceeded once per return period (Gumbel method-of-moments)",
+          "duration": "24hr",
+          "return_period": 2,
+          "probability_threshold": "fraction of ensemble members above threshold",
+          "threshold": "CMORPH 24hr 2-year level"
+        }
+      ]
+    }
+  ],
+  "analysis_parameters": {
+    "forecast_days": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "probability_threshold": 0.2,
+    "frequency_denominator": "available selected initialization/forecast-day pairs"
+  },
+  "source_sha256": {
+    "scripts/__init__.py": "c0bde83a874510a8ec5e46892a1c6e1642ae65e05038ab4e483d8ed2f72c354f",
+    "scripts/cmorph_return_periods.py": "bb41d73cc9c2971696a931c2dabc4c6dbcffbda4382694018741218c76392bcb",
+    "scripts/common.py": "7dfa8f3404c01b707a0eb4fd531663406d7d7d333dfbaa99bd67f66b92cab40a",
+    "scripts/data_access.py": "7b330b28f13607b444064545485ee5bf12dcee2825dcefd5033fbd6603d01bc6",
+    "scripts/forecast_rainfall.py": "da2dc0a292f49a7a8a4719bf2022271c0c063b1c7b45d8b3e43ec6af32f17692",
+    "scripts/forecast_signal_leadtime.py": "3c3ef7f09ede230880cd89ca13c647993497603bced42236763dbf125a1aeeb7",
+    "scripts/forecast_threshold_counts.py": "de51809c4609c71a376c7f9af29b97ec923b62a3bcf5b3496663983ecfdb30d3",
+    "scripts/rainfall_thresholds.py": "314cb3bb766ea99a7f521e076f81a6dbfd15b3b088ccb7fc9192232a7c334c1a",
+    "scripts/region_risk_maps.py": "5973cf48d947bb7a80b852fa24159af768decd0b7a1d9b417c5becf344aa345a",
+    "scripts/return_levels.py": "768b1d8a944fa8e3531bde0e857bb9b169a4765aaaa6f097068258e5f78e5b61",
+    "scripts/validation.py": "39e18a9689931c27c23844a32cb775b76badc34d04947093e335cb0bf98ba07b"
+  }
+}

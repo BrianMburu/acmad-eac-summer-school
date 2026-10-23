@@ -1,0 +1,267 @@
+{
+  "source_commit": "53a1f4b453ef846504075a649d6279d4287f408b",
+  "forecast_source": "checksum-verified raw cumulative cache replay",
+  "cmorph_source": "fresh nearest-pixel reads from pinned public snapshot",
+  "forecast_snapshot": "212QY6MDW3RZ7PWD7A2G",
+  "cmorph_snapshot": "309ZYV7EMDMNPD0EDZK0",
+  "cached_forecast_data_files": [
+    {
+      "file": "2025-06-09-3675c1f8d80a4180.nc",
+      "input_sha256": "3675c1f8d80a4180e80921562e3d2f8060e971ddf4d91c60ee68d3b79eacc12a",
+      "file_sha256": "cbcf46eeaab573f9735b7661138261b7197c9343bbcdc6f6f9f6a4ab8f3459f8"
+    },
+    {
+      "file": "2025-06-10-04c188ccd15e4698.nc",
+      "input_sha256": "04c188ccd15e46984a17ee6d9b660887ab3020a63f9468c20dce9bd0d580d531",
+      "file_sha256": "573d18a95929d965fd9165cadd9e63b66a1e36a896c5d5c49bd6386d0c370c2a"
+    },
+    {
+      "file": "2025-06-11-c1b3591dcb44e5ff.nc",
+      "input_sha256": "c1b3591dcb44e5ff994d6dbdddac187add23f558e0c9f6901853801c1f9c44c0",
+      "file_sha256": "d2ef1be19f7a0b02c8ee93acd84b8fce445912fa22a662fa90bc755bb4178989"
+    },
+    {
+      "file": "2025-06-12-f0bc22d0ad0984c0.nc",
+      "input_sha256": "f0bc22d0ad0984c09f588b7389ca98bf2ce23d6a6e53bb488668f515dce2a6ce",
+      "file_sha256": "b811c52872588e8276d2b84c168aab4d892ebcd28c1c84d76174653988f7007f"
+    },
+    {
+      "file": "2025-06-13-bbb50842411d6ca3.nc",
+      "input_sha256": "bbb50842411d6ca33a63c7443be2df0f87ebd6943de2413c83f4f067bca7ebc2",
+      "file_sha256": "b8fac6ab218ba52183210525420ea9ea051b6291e3b98f1ae096d317b9d250ac"
+    },
+    {
+      "file": "2025-06-14-db3b5f1ee97581da.nc",
+      "input_sha256": "db3b5f1ee97581da1bd2f7de505f7f998d59c520fa5435187d81e338fa4b91e2",
+      "file_sha256": "9c09c351212dbbe150f274bfce0972308bb1d166ede5cfd2f5898f7633b4af54"
+    },
+    {
+      "file": "2025-06-15-5571ef2b965c88f0.nc",
+      "input_sha256": "5571ef2b965c88f0fe4570bd9f46929a4a8bd147029a4e5f1eb25a0fb144fab0",
+      "file_sha256": "69dc6aba69261c7a1ea41c9eac7cf19388c9d04b813fe7859522dd6a7b1b7ed1"
+    },
+    {
+      "file": "2025-06-16-3d7d9b245006ea92.nc",
+      "input_sha256": "3d7d9b245006ea929cc5a02bb043d61963e792fa723bd35fd0261909afe8501d",
+      "file_sha256": "8a4a7f49c6df732e2c15e084d4514911972ae65231b66d04df108c1b542e9d19"
+    },
+    {
+      "file": "2025-06-17-5e59a2fbcab35edc.nc",
+      "input_sha256": "5e59a2fbcab35edc7134993f401938ad84c3c8dc330e5c9b0dd5fb745572804b",
+      "file_sha256": "9059a37708806bf248f19b0f5d34973b9d6948d8924ffee45b8a6c3bf4363466"
+    },
+    {
+      "file": "2025-06-18-aa04492e85889134.nc",
+      "input_sha256": "aa04492e85889134e29ced920fb279ad86f4fb95188c986b7f5d8b974cc783fa",
+      "file_sha256": "49535316e9acea4d2b4f94f53bb3636d48e29f301ca45be393437b757a345991"
+    },
+    {
+      "file": "2025-06-19-1b36eb42454399d3.nc",
+      "input_sha256": "1b36eb42454399d399d81b3391df8c1afcfe657db3102c11a1be27d5e6fb94bf",
+      "file_sha256": "8ed7c23a99c59285b4873d100b14132c20b33ecd2dee70473d4cf898472f8b9e"
+    },
+    {
+      "file": "2025-06-20-456ea9c21b0bceea.nc",
+      "input_sha256": "456ea9c21b0bceea0ad1d3bbf49102c28ad4d1ef1c2c1d042fcc8b5224edb3b7",
+      "file_sha256": "deba39aa86f11e0afd49522729571fa93ac6c020f46b0d868d477ae6eafc7ab7"
+    },
+    {
+      "file": "2025-06-21-3e926042ddf79c0f.nc",
+      "input_sha256": "3e926042ddf79c0fd3908067209d982ed1d5c298aec371a147251e04b7b0d8d2",
+      "file_sha256": "c12443dcafc7b57aee0bb9340134826cecd763f50afee9be0984fa2959c9d7bf"
+    },
+    {
+      "file": "2025-06-22-b074ff02ed216ee4.nc",
+      "input_sha256": "b074ff02ed216ee4f05893f6589cad43e57d9850675711e50dff6ebd28c72f5c",
+      "file_sha256": "ae6feec011fd2b2d26fcdc87f4f762945686a5d8672924d7e993a8a29e413439"
+    },
+    {
+      "file": "2025-07-09-17ecc33c5cb4419f.nc",
+      "input_sha256": "17ecc33c5cb4419f6c7295ee972dc8c7534a0804edd1577b7d47802c52987cd2",
+      "file_sha256": "3272120ce02a82ac1b3dcd448b7a4a724ea815d097dcee1c28a3384d6fefe3f3"
+    },
+    {
+      "file": "2025-07-10-100a6019340ce150.nc",
+      "input_sha256": "100a6019340ce150d582f1da193dcf262ec6a3ed6209d15733caf4c5a4b48aeb",
+      "file_sha256": "098894844ce38185a9c681d06741f6e7420b610958464cb6d6997ae0fa238d36"
+    },
+    {
+      "file": "2025-07-11-2ea26a8eec558cb8.nc",
+      "input_sha256": "2ea26a8eec558cb84c4ff015d5e94682fa62962bad58d73b5a18581b233465ec",
+      "file_sha256": "4bcf8569b7ef3037f8640c358ee186cfdbe2d5d4bea30b585da04f3fb1d9ff2e"
+    },
+    {
+      "file": "2025-07-12-3f5bbb5369fa63e5.nc",
+      "input_sha256": "3f5bbb5369fa63e583b683740755149e31ba20a9ba8d23386ae7fae80b136427",
+      "file_sha256": "b4de7f6915b27f6c788e29e657a9972c9fe2926c157011d95a3b333827b1dd1e"
+    },
+    {
+      "file": "2025-07-13-a48d29cf19ceb424.nc",
+      "input_sha256": "a48d29cf19ceb424ffadad0ca8d61c7aef67cd0a07f0403051a9bb8b71772957",
+      "file_sha256": "3d5eba075932dc2ecbf2b7afd391833edb04570b04f1aedd712ac01f0fd18d87"
+    },
+    {
+      "file": "2025-07-14-8273c6652991f3de.nc",
+      "input_sha256": "8273c6652991f3de6bf605acc8997983f0894311b3c84f90140b80080e1a1cd2",
+      "file_sha256": "6e7bb86f32fabff28205b4a8c945f02003130c18f7454237b1e4e93593762950"
+    },
+    {
+      "file": "2025-07-15-7cdf01ffeaf60973.nc",
+      "input_sha256": "7cdf01ffeaf609734c6c50ddf7ffbd7415b0de4c099a40ff01a3815b595c6161",
+      "file_sha256": "c38fb38718b15db6926bd529ccff8351cf0a31f50a3f503901fe0003da85bbf9"
+    },
+    {
+      "file": "2025-07-16-c0a00b91f1ae0f32.nc",
+      "input_sha256": "c0a00b91f1ae0f323000aacfeb01f680a76544a3c1b665e0963873116323c6fc",
+      "file_sha256": "416610eb815023982c5294061e69ef7d7b727974609eefe514a9d70e748cdd46"
+    },
+    {
+      "file": "2025-07-17-fda8d1811fba534e.nc",
+      "input_sha256": "fda8d1811fba534e50db87a64ded59168dbc5a5c9bca398375cc3e4899393757",
+      "file_sha256": "853f534ac5e4670bdbc1bb30f7d03966c491ed3ef2c5476fba7cf528cfa0d7e0"
+    },
+    {
+      "file": "2025-07-18-9ed003329db748dd.nc",
+      "input_sha256": "9ed003329db748dde6f1e8d22875454bb4d358373a667e00f14a136b29bee1f4",
+      "file_sha256": "1dd2318c8d805f076ba81e75b021e00fcb4c3d8ce547c61b4d795c4b5e498e73"
+    },
+    {
+      "file": "2025-07-19-5b75864ef34c868a.nc",
+      "input_sha256": "5b75864ef34c868a39c3e3b2a2e06a5faaa5d229ea0a1a655c6afc3a787a979f",
+      "file_sha256": "3b8f4d622b164b17fb07e10ab961b56a345af62f63f10814388a8e1fb20daacd"
+    },
+    {
+      "file": "2025-07-20-0a30be17fc87f14b.nc",
+      "input_sha256": "0a30be17fc87f14b2dd7afb34a571b3b8dbb5ad04d123bb8dd043719a7de2df0",
+      "file_sha256": "9eb7bcafbf4c819ec8399d4f547a4fcca2d20a3fe8f22af0288ea03bace8d566"
+    },
+    {
+      "file": "2025-07-21-3faba6fc89be0985.nc",
+      "input_sha256": "3faba6fc89be0985370b8387c5f74ff2beddc45c08ddb944a4794fefab90604d",
+      "file_sha256": "ae60280ac17cb0ca12c263da0157170051f3c19f86bd7efafbcce2acd9ec3cde"
+    },
+    {
+      "file": "2025-07-22-ce27bffe19915db3.nc",
+      "input_sha256": "ce27bffe19915db3f34776efc8df2d0c404787a81ce404b82e477ab37961f0af",
+      "file_sha256": "4b38c7632a20ac99868a94fba6dc55f2b928f2a3358617e1ffe8489c8479ca18"
+    },
+    {
+      "file": "2025-08-09-c94a865ee2dffa4a.nc",
+      "input_sha256": "c94a865ee2dffa4a8609d645c24cba9544436ec71aa4360345d7cd95f698f6ef",
+      "file_sha256": "51f11d0a2a40ee54cdf33f491189f7f2219445e1eb5fd9c09466c6a5debb50c8"
+    },
+    {
+      "file": "2025-08-10-834cb684e330c32f.nc",
+      "input_sha256": "834cb684e330c32fb976a21da2451283a570211d27762fba72f43ba93d8599cc",
+      "file_sha256": "3e961bbcec7e2f35fd8a5ebd06a805b29883388fab05a723870b23f41eb7e3f3"
+    },
+    {
+      "file": "2025-08-11-9d96488df92ca544.nc",
+      "input_sha256": "9d96488df92ca5446ae4d941cb619f441611f24faeda897d195c40eaab3c9af5",
+      "file_sha256": "3b47df5754024e9ee16724ab101a6a2c7d22bf2f0c47bd997137da595612fcda"
+    },
+    {
+      "file": "2025-08-12-9ee183eacbbba2c0.nc",
+      "input_sha256": "9ee183eacbbba2c0ff1bb895d22273561364a3b7844043f3eaf69f3782592ca5",
+      "file_sha256": "6148f5fa1194523d521e6b2ac673b75062c0d5598acf2df9a9563329f50f3a44"
+    },
+    {
+      "file": "2025-08-13-fdf16be3b029cc13.nc",
+      "input_sha256": "fdf16be3b029cc13667339c40102f34ab3565f6d9646cbdbb7fd8cadb04fc76b",
+      "file_sha256": "3299e400c3725797087deca87814c700ab595a7fd8874b91b170895cf73a6941"
+    },
+    {
+      "file": "2025-08-14-27cbbc1c47e5f616.nc",
+      "input_sha256": "27cbbc1c47e5f616926c4a023ca0a5918922665d109422cffaf887011ec54d6e",
+      "file_sha256": "9a3c69ff264419aaa11ff66f866146331476791e1af701907a5c26467fbbde56"
+    },
+    {
+      "file": "2025-08-15-b8e80e4fa86ec6de.nc",
+      "input_sha256": "b8e80e4fa86ec6deab69736302be18f4245564a25bc23140e5c5f232bab61c40",
+      "file_sha256": "4272e77423e6f2be94369d9136e371ce25fa479560e29d8009af4c79408f7dcf"
+    },
+    {
+      "file": "2025-08-16-06cba39f9b0fb1b6.nc",
+      "input_sha256": "06cba39f9b0fb1b6e2c3830919b1c4554bef0d09f4400713a04331be36202246",
+      "file_sha256": "781195acaab6077ce48131fc6280c7f254e9299409d4573f4f6f8fab4bc66e07"
+    },
+    {
+      "file": "2025-08-17-6337ebb359c9fa07.nc",
+      "input_sha256": "6337ebb359c9fa07924e7ee6445befedc828526431cd0d7dcfd3b4158e351c8b",
+      "file_sha256": "cdd999b6615268b10d5597d500d50aeb7dd6c138375bd90f6bcab95e0e9aacef"
+    },
+    {
+      "file": "2025-08-18-282a91fc2ce7c040.nc",
+      "input_sha256": "282a91fc2ce7c040b128c36650a4f5370c769d294b745a68eb3151468d5591b0",
+      "file_sha256": "cb78dbdf58385f20d7a0bdb7514519ccede0b255a9c9d6abb0182b5f4d377fdf"
+    },
+    {
+      "file": "2025-08-19-d9422237e722d5a5.nc",
+      "input_sha256": "d9422237e722d5a5aed67bdd5b6b85c0c3d0993608ad3f4102d2ab6e80016474",
+      "file_sha256": "1f03eee16c9f9ed706e1670de0afd292a5f24cbf6ae57e32bd168225d5cd5d4c"
+    },
+    {
+      "file": "2025-08-20-d59657e3bb07188b.nc",
+      "input_sha256": "d59657e3bb07188b898a391970c547d8934c1b28ccb328981654413b40fe60b9",
+      "file_sha256": "d1223120302ec39374b44b58fd8b1838e2ebe68c5260900e283cf7f7b6c514e9"
+    },
+    {
+      "file": "2025-08-21-91718e62663706cd.nc",
+      "input_sha256": "91718e62663706cd9236a8fc8002d1599fbabb570c735bdb66bb8d36cfaa005a",
+      "file_sha256": "2e4d13345403d5e113a7efa8bfab951ab617b1608f99b556205fa66cae372cde"
+    },
+    {
+      "file": "2025-08-22-57969dfe2407ad01.nc",
+      "input_sha256": "57969dfe2407ad01b7cc72758a97df1705f75986b9aba7d54c8fa663464bb59a",
+      "file_sha256": "c48d4dec45bed5a34ed744c4085169123ef422cca07b2536c786796891a50384"
+    },
+    {
+      "file": "2025-06-16-9b0bf99aeb297cca.nc",
+      "input_sha256": "9b0bf99aeb297cca76d191917c86a661f8c7ac50f1b5ab8f2e8fadff5ae2143f",
+      "file_sha256": "0cc96b9a85a99b930b5ea8ca89917c2456e44b19ee666d274db5819f44822249"
+    },
+    {
+      "file": "2025-07-16-4ab375a0ec0796d1.nc",
+      "input_sha256": "4ab375a0ec0796d1b7a81da3c155c2660db43fb866bb92eaf6300d5880d4fc3d",
+      "file_sha256": "3b612f7531b4459ef63f86dca56f892592fa04d1b7fc204a3040f30b20f18d1b"
+    },
+    {
+      "file": "2025-08-13-c396a37c93309428.nc",
+      "input_sha256": "c396a37c933094286096777b24a4f7fd160f2ea111e409164610df64d1d37b82",
+      "file_sha256": "4b7612752069dcedbdfa60587875047c5a877e236d944163426d41df0a22057c"
+    },
+    {
+      "file": "2025-08-16-936fc723f02e4159.nc",
+      "input_sha256": "936fc723f02e4159e7b0c5de86343c7729a1ebc70120859524ac11f21e669821",
+      "file_sha256": "126bc588412429dc24895eebf84945a11bc57f657c971b2ff31c175bdf3aeaf4"
+    }
+  ],
+  "B": {
+    "starts": 3,
+    "summary_rows": 45,
+    "member_days_above": {
+      "cmorph_10yr": 15,
+      "cmorph_2yr": 48,
+      "fixed_20mm": 252
+    },
+    "xclim_agrees_with_direct_counts": true
+  },
+  "C": {
+    "starts": 42,
+    "count_cells": 2100,
+    "event_summary_rows": 690,
+    "all_count_cells_match_prior_independent_implementation": true,
+    "kassala_aug20_any_member_consistency": "10/10",
+    "kassala_aug20_20_percent_consistency": "2/10",
+    "best_town": "Khartoum",
+    "best_start": "2025-08-20"
+  },
+  "D": {
+    "starts": 4,
+    "forecast_day_pairs": 40,
+    "peak_probability": 0.3333333333333333,
+    "cells_ever_at_20_percent": 47,
+    "maximum_frequency": 3,
+    "matches_prior_independent_probability_grid": true
+  }
+}

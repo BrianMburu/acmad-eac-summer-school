@@ -35,7 +35,7 @@ TOWN_EXTENT_HALF_WIDTH_DEGREES = 0.5  # derive 1° × 1° boxes from the centres
 # Forecast dates are separate from historical CMORPH reference years.
 FORECAST_START_DATE = "2025-06-01"
 FORECAST_END_DATE = "2025-08-31"
-FORECAST_START_DATES = None  # whole-group decision; required before forecast reads
+FORECAST_START_DATES = ["2025-06-16", "2025-07-16", "2025-08-16"]
 CMORPH_YEARS = (1998, 2024)
 
 # Pinned snapshots reproduce the completed run. Set snapshot_id to None to
@@ -65,6 +65,26 @@ COMPARISON = {"duration": "24hr", "return_period_years": 2,
 WORKERS = 2
 OUTPUT_DIRECTORY = "out/rainfall_thresholds"
 
+# Agreed B/C/D experiment. Each C window includes its monthly B anchor.
+FORECAST_ANALYSIS = {
+    "units_if_missing": "m",  # Workshop E5/E6 cumulative-depth assumption, recorded per run.
+    "trace_rainfall_mm": 0.08,  # ECMWF GRIB packing tolerance; larger decreases fail.
+    "fixed_threshold_mm": 20.0,
+    "lead_time_windows": [
+        {"start": "2025-06-09", "end": "2025-06-22"},
+        {"start": "2025-07-09", "end": "2025-07-22"},
+        {"start": "2025-08-09", "end": "2025-08-22"},
+    ],
+    "risk_start_dates": ["2025-06-16", "2025-07-16", "2025-08-13", "2025-08-16"],
+    "risk_forecast_days": list(range(1, 11)),
+    "probability_threshold": 0.20,
+}
+
+
+def forecast_settings(config):
+    """Read shared forecast choices; support older saved configurations."""
+    return deepcopy(config.get("forecast_analysis", FORECAST_ANALYSIS))
+
 
 def default_config():
     """Build a fresh dictionary; callers cannot mutate the module's defaults."""
@@ -85,6 +105,7 @@ def default_config():
                            "map_duration": MAP_DURATION, "map_return_period_years": MAP_RETURN_PERIOD,
                            "units_if_missing": UNITS_IF_MISSING},
             "comparison": deepcopy(COMPARISON),
+            "forecast_analysis": deepcopy(FORECAST_ANALYSIS),
             "execution": {"workers": WORKERS, "output_directory": OUTPUT_DIRECTORY}}
 
 
@@ -183,7 +204,7 @@ def validate_common(config, require_forecast_dates=False):
     """Validate shared settings without imposing the threshold task's requirements."""
     _object(config, "config", ("schema_version", "country", "country_code", "coordinate_reference_system",
             "coordinate_source", "region_extent", "towns", "start_date", "end_date", "forecast",
-            "cmorph_reference", "comparison", "execution"), optional=("thresholds",))
+            "cmorph_reference", "comparison", "execution"), optional=("thresholds", "forecast_analysis"))
     if type(config["schema_version"]) is not int or config["schema_version"] != 2:
         raise ConfigError("schema_version: expected 2")
     for key in ("country", "country_code", "coordinate_source"):
@@ -245,6 +266,40 @@ def validate_common(config, require_forecast_dates=False):
     _number(comparison["return_period_years"], "comparison.return_period_years", 2, 10000, integer=True)
     if comparison["exceedance_operator"] != ">" or comparison["matching"] != "nearest":
         raise ConfigError("comparison: supported choices are exceedance_operator '>' and matching 'nearest'")
+
+    if "forecast_analysis" in config:
+        settings = config["forecast_analysis"]
+        _object(settings, "forecast_analysis", tuple(FORECAST_ANALYSIS))
+        if settings["units_if_missing"] not in ("m", "mm"):
+            raise ConfigError("forecast_analysis.units_if_missing: choose m or mm")
+        for key, low, high in [("trace_rainfall_mm", 0, 0.1),
+                               ("fixed_threshold_mm", 0.001, 10000),
+                               ("probability_threshold", 0.001, 0.999)]:
+            _number(settings[key], f"forecast_analysis.{key}", low, high)
+        windows = settings["lead_time_windows"]
+        if not isinstance(windows, list) or not windows:
+            raise ConfigError("forecast_analysis.lead_time_windows: expected windows")
+        previous_end = None
+        for i, window in enumerate(windows):
+            path = f"forecast_analysis.lead_time_windows[{i}]"
+            _object(window, path, ("start", "end"))
+            first, last = _date(window["start"], path + ".start"), _date(window["end"], path + ".end")
+            if not start <= first <= last <= end or not 14 <= (last - first).days + 1 <= 21:
+                raise ConfigError(f"{path}: require 14–21 daily starts inside the season")
+            if previous_end is not None and first <= previous_end:
+                raise ConfigError(f"{path}: windows must be ordered and non-overlapping")
+            previous_end = last
+        risk_dates = settings["risk_start_dates"]
+        if not isinstance(risk_dates, list) or not 3 <= len(risk_dates) <= 4:
+            raise ConfigError("forecast_analysis.risk_start_dates: choose 3 or 4 dates")
+        parsed = [_date(value, "forecast_analysis.risk_start_dates") for value in risk_dates]
+        if len(set(parsed)) != len(parsed) or not all(start <= d <= end for d in parsed):
+            raise ConfigError("forecast_analysis.risk_start_dates: dates must be unique and inside the season")
+        days = settings["risk_forecast_days"]
+        if (not isinstance(days, list) or not days
+                or any(type(d) is not int or d < 1 or d > 10 for d in days)
+                or days != sorted(set(days))):
+            raise ConfigError("forecast_analysis.risk_forecast_days: choose unique ordered days 1–10")
 
 
 def validate_thresholds(config):
