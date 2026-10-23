@@ -1,10 +1,10 @@
 # Sudan rainfall extremes
 
-Part A of the ACMAD group project: define extreme rainfall at Khartoum, Kassala,
-Gedaref, El Obeid and Nyala using CMORPH annual maxima from 1998–2024. Other
-subgroups compare these levels with June–August 2025 ECMWF forecasts. The
-repository also contains the Part B threshold-count, Part C lead-time and Part D
-region-risk analyses.
+The ACMAD group project studies rainfall extremes at Khartoum, Kassala, Gedaref,
+El Obeid and Nyala. Part A defines thresholds from CMORPH annual maxima for
+1998–2024. Parts B–D compare warning thresholds, measure repeated forecast
+signals for the same valid day, and map regional risk using June–August 2025
+ECMWF ensemble forecasts.
 
 See the [observed rainfall threshold task and results](RAINFALL_THRESHOLDS.md) for the assignment,
 acceptance criteria, completed local run and handoff to the other teams.
@@ -307,6 +307,48 @@ are faster than cold remote reads.
 
 Overrides: `--start-dates YYYY-MM-DD ...` (three or four dates),
 `--days 1,2,3,4,5`, and `--probability 0.20`.
+
+## Corrected experiment results
+
+The corrected B–D outputs use the defaults above and checksum-verified raw
+forecast reads from the completed experiment. CMORPH thresholds were reread
+from the pinned snapshot. The source scripts were committed before generating
+these figures. See [the replay verification](out/forecast_workflow_verification.json)
+and each output folder's `forecast_manifest.json` for input hashes and settings.
+No additional forecast download was needed for this replay.
+
+B's member-day totals across all five towns are:
+
+| Start | Above 20 mm/day | Above local 2-year level | Above local 10-year level |
+|---|---:|---:|---:|
+| 16 June 2025 | 3 | 0 | 0 |
+| 16 July 2025 | 46 | 3 | 0 |
+| 16 August 2025 | 203 | 45 | 15 |
+| Total | 252 | 48 | 15 |
+
+All xclim counts agree with direct counts. All 2,100 C count cells and all 41,600
+D probabilities agree with the independently completed earlier implementation.
+C's revised summary supplies the event-based interpretation: for Kassala's
+24-hour period ending **20 August**, all 10 available starts have at least one
+member above the 37.95 mm threshold. The first is 10 August at a ten-day lead.
+Only **2/10** starts reach 20% probability; the first is **13 August at a
+seven-day lead**, and the peak is **13/51 (25.5%)**. Coverage is limited to the
+sampled windows and ten-day forecast horizon.
+
+The C plume selected by total member-days is **Khartoum, 20 August start**:
+25 member-days above its threshold, peaking at 10 members on day 5. This ranks
+total exceedances across that start's horizon; it does not replace the
+same-valid-day warning and consistency calculations.
+
+D's peak is **17/51 (33.3%)**. There are **47** grid points reaching 20% at least
+once and **56** grid-point/start/day hits. The highest frequency is **3/40
+(7.5%)**, at three pixels near (24.75°E, 14.5°N), (25°E, 14.5°N) and
+(36.25°E, 16.25°N). Forecast-cell thresholds differ from town-centre thresholds,
+so a town's C result need not equal the nearest D grid-cell result.
+
+The regression suite passes **128 tests**, including unit scaling, large
+cumulative decreases, missing members/data, daily endpoints, shared default
+selections and same-valid-day consistency.
 
 ## Limits and workshop sources
 
