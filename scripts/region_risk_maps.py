@@ -523,6 +523,8 @@ def run(
             )
         finally:
             observed.close()
+        indices, _ = cumulative_indices(forecast_region, days)
+        warn_source_size(forecast_region[config["forecast"]["variable"]], starts, indices)
         probabilities, kept, skipped, timings = read_probabilities(
             forecast_region, config, starts, threshold_map, days
         )

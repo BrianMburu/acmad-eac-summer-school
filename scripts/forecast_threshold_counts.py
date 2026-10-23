@@ -351,6 +351,8 @@ def run(config, out, init=None, fixed_mm=None):
     forecast, forecast_snapshot = open_store(config["forecast"])
     try:
         check_forecast_coverage(forecast, config)
+        _, daily_indices = daily_step_indices(forecast.step.values)
+        warn_source_size(forecast[config["forecast"]["variable"]], starts, daily_indices)
         observed, observed_snapshot = open_store(config["cmorph_reference"])
         try:
             levels, units = read_thresholds(observed, config)

@@ -98,3 +98,15 @@ def test_defaults_restore_agreed_dates_for_all_five_towns():
         changed['forecast_analysis'][key] = value
         with pytest.raises(ConfigError, match='forecast_analysis'):
             validate_common(changed)
+
+
+def test_warns_about_large_source_reads_before_computation():
+    from scripts.forecast_rainfall import warn_source_size
+
+    array = cumulative()
+    # A whole ensemble map chunk is decoded even for a tiny point selection.
+    array.encoding['chunks'] = (1, 1, 51, 321, 261)
+    array = array.astype('float32')
+    array.encoding['chunks'] = (1, 1, 51, 321, 261)
+    with pytest.warns(UserWarning, match='source map chunks'):
+        warn_source_size(array, ['2025-06-16', '2025-07-16', '2025-08-16'], list(range(11)))
