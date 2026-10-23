@@ -31,7 +31,7 @@ def synthetic_stores():
     fc_lat = np.arange(18.0, 9.99, -1.0)
     fc_lon = np.arange(23.0, 38.01, 1.0)
     steps = pd.to_timedelta(np.arange(11) * 24, unit="h")
-    n_members = 4
+    n_members = 51
     day = np.arange(10)[:, None, None, None]
     member = np.arange(n_members)[None, :, None, None]
     daily_mm = (8.0 + 6.0 * day + 5.0 * member
@@ -87,13 +87,13 @@ def test_forecast_daily_totals_are_whole_day_differences(synthetic_stores):
     daily, daily_init = counts.forecast_daily_totals(forecast, config, time_index)
     assert daily_init == init
     assert daily.dims == ("number", "step", "town")
-    assert daily.sizes == {"number": 4, "step": 10, "town": 5}
+    assert daily.sizes == {"number": 51, "step": 10, "town": 5}
     assert daily.forecast_day.values.tolist() == list(range(1, 11))
     assert str(daily.valid_time.values[0])[:10] == "2025-07-17"
     for town in config["towns"]:
         point = forecast["tp"].isel(time=0).sel(
             latitude=town["latitude"], longitude=town["longitude"], method="nearest")
-        expected = point.diff("step").transpose("number", "step").values * counts.TP_TO_MM
+        expected = point.diff("step").transpose("number", "step").values * 1000.0
         np.testing.assert_allclose(daily.sel(town=town["name"]).values, expected)
 
 
@@ -193,7 +193,7 @@ def test_run_with_synthetic_stores(synthetic_stores, tmp_path, monkeypatch):
         return forecast, "synthetic-forecast"
 
     monkeypatch.setattr(counts, "open_store", fake_open)
-    result = counts.run(config, tmp_path)
+    result = counts.run(config, tmp_path, init="2025-07-16")
     assert result["forecast_snapshot"] == "synthetic-forecast"
     assert result["observed_snapshot"] == "synthetic-cmorph"
     assert result["init"] == pd.Timestamp("2025-07-16")
@@ -206,3 +206,28 @@ def test_run_with_synthetic_stores(synthetic_stores, tmp_path, monkeypatch):
     saved = pd.read_csv(result["table_path"])
     assert len(saved) == len(names) * 3
     assert (saved.member_days_above == saved.xclim_heavy_days_total).all()
+
+
+def test_default_run_uses_shared_monthly_starts_and_reports_unwritten_start(synthetic_stores, tmp_path, monkeypatch):
+    config, observed, forecast, names = synthetic_stores
+    starts = pd.to_datetime(config['forecast']['start_dates'])
+    forecast = xr.concat([forecast.assign_coords(time=[start]) for start in starts], dim='time')
+    forecast.tp.loc[{'time': starts[1]}] = np.nan
+    monkeypatch.setattr(counts, 'open_store', lambda settings:
+                        (observed, 'synthetic-cmorph') if settings['prefix'] == config['cmorph_reference']['prefix']
+                        else (forecast, 'synthetic-forecast'))
+    monkeypatch.setattr(counts, 'plot_town', lambda *args: tmp_path / 'town.png')
+    monkeypatch.setattr(counts, 'plot_overview', lambda *args: tmp_path / 'overview.png')
+    result = counts.run(config, tmp_path)
+    assert list(result['starts']) == [starts[0], starts[2]]
+    assert list(result['skipped_starts']) == [starts[1]]
+    assert set(result['table'].forecast_init) == {'2025-06-16', '2025-08-16'}
+    assert len(result['table']) == 2 * 3 * len(names)
+
+
+def test_explicit_mm_depths_are_not_scaled_as_metres(synthetic_stores):
+    config, _, forecast, _ = synthetic_stores
+    forecast.tp.attrs['units'] = 'mm'
+    daily, _ = counts.forecast_daily_totals(forecast, config, 0)
+    assert daily.attrs['mm_factor'] == 1
+    assert float(daily.max()) < 1

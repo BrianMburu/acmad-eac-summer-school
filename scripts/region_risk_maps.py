@@ -4,19 +4,18 @@ This adapts E8 (local CMORPH return-level probability maps) and the map-read
 lesson from E3 (pan chunks): select the region, start date and whole-day lead
 steps before touching the remote data, then compute only those maps.
 
-For each randomly selected forecast start, the script maps the share of the 51
+For each configured forecast start, the script maps the share of the 51
 ensemble members above the nearest-pixel CMORPH 24-hour 2-year level for
-forecast days 1-5.  It then counts, at every forecast grid point, how many
+forecast days 1-10.  It then counts, at every forecast grid point, how many
 start/day cases reach a chosen probability (20% by default).  The final
-frequency map is the season-risk map; all probability and frequency maps carry
-the five Part C town markers.
+frequency map describes the selected start/day cases. All probability and
+frequency maps carry the five Part C town markers.
 
 Run:
     uv run python -m scripts.region_risk_maps --config grid.json
 
-The random starts are stratified across the configured season so that all of
-June-August is represented.  Pass explicit dates with ``--start-dates`` to
-reproduce a particular selection.
+Dates, days and probability default to the shared settings in common.py.
+Pass ``--start-dates`` to override the configured selection.
 """
 
 import argparse
@@ -33,20 +32,21 @@ import xarray as xr
 
 from scripts.common import (
     ROOT,
+    forecast_settings,
     ConfigError,
     box_inside,
     load_config,
     validate_common,
 )
 from scripts.data_access import domain, open_store
+from scripts.forecast_rainfall import (daily_step_indices as validated_daily_indices, daily_totals,
+                                       forecast_unit_report, validate_starts, validate_ensemble,
+                                       warn_source_size, write_manifest)
 from scripts.validation import units_report
 
 OUTPUT_DIRECTORY = ROOT / "out" / "region_risk"
-DEFAULT_PROBABILITY = 0.20
-DEFAULT_DAYS = (1, 2, 3, 4, 5)
 DEFAULT_N_STARTS = 4
 DEFAULT_SEED = 42
-TP_TO_MM = 1000.0
 RETURN_PERIOD = 2
 DURATION = "24hr"
 LABEL_OFFSETS = {
@@ -154,13 +154,7 @@ def daily_step_indices(forecast):
     """Return all whole-day lead indices; 3-hourly steps are excluded."""
     if "step" not in forecast.coords:
         raise ValueError("forecast store has no step coordinate")
-    lead_h = (
-        pd.to_timedelta(forecast["step"].values) / pd.Timedelta("1h")
-    ).astype(int)
-    day_indices = [i for i, hours in enumerate(lead_h) if hours % 24 == 0]
-    if not day_indices or day_indices[0] != 0 or len(day_indices) < 2:
-        raise ValueError("forecast needs a 0-hour step and at least one whole-day step")
-    return lead_h, day_indices
+    return validated_daily_indices(forecast.step.values)
 
 
 def cumulative_indices(forecast, days):
@@ -236,33 +230,26 @@ def read_probability_for_start(forecast_region, config, start, threshold_map, da
     starts = pd.DatetimeIndex([pd.Timestamp(start)])
     start_indices = forecast_start_indices(forecast_region, starts)
     step_indices, days = cumulative_indices(forecast_region, days)
+    validate_starts(starts, config)
+    validate_ensemble(forecast_region[variable])
+    forecast_unit_report(forecast_region[variable], config)
+    warn_source_size(forecast_region[variable], starts, step_indices)
     started = time.perf_counter()
-    cumulative = (
-        forecast_region[variable]
-        .isel(time=int(start_indices[0]), step=step_indices)
-        .compute()
-        * TP_TO_MM
-    )
+    cumulative = forecast_region[variable].isel(time=int(start_indices[0]), step=step_indices)
+    daily = daily_totals(cumulative.compute(num_workers=config["execution"]["workers"]), config)
     elapsed = time.perf_counter() - started
-    values = np.asarray(cumulative.values)
-    finite = np.isfinite(values)
-    if not finite.any():
+    if daily is None:
         return None, elapsed
-    if not finite.all():
-        raise ValueError(f"forecast start {start:%Y-%m-%d} contains partial missing data")
-    if (values < -1e-6).any():
-        raise ValueError(f"forecast start {start:%Y-%m-%d} has negative cumulative totals")
-
-    daily = cumulative.diff("step")
-    daily = daily.assign_coords(forecast_day=("step", np.arange(1, len(step_indices))))
     selected = daily.isel(step=[int(day) - 1 for day in days])
     probability = (selected > threshold_map).mean("number").where(
         np.isfinite(threshold_map)
     )
-    probability = probability.expand_dims(time=[pd.Timestamp(start)])
+    probability = probability.drop_vars("time").expand_dims(time=[pd.Timestamp(start)])
     probability = probability.assign_coords(forecast_day=("step", list(days)))
     probability.name = "exceedance_probability"
+    probability.attrs.update(daily.attrs)
     probability.attrs.update({
+        "units": "1",
         "probability_threshold": "fraction of ensemble members above threshold",
         "threshold": f"CMORPH {DURATION} {RETURN_PERIOD}-year level",
     })
@@ -285,7 +272,8 @@ def read_probabilities(forecast_region, config, starts, threshold_map, days):
         timings.append(elapsed)
     if not arrays:
         raise ValueError("no selected forecast starts contain finite data")
-    probabilities = xr.concat(arrays, dim="time")
+    probabilities = xr.concat(arrays, dim="time", coords="different", compat="equals")
+    probabilities.attrs["per_start_validation"] = [dict(array.attrs) for array in arrays]
     return probabilities, pd.DatetimeIndex(kept), pd.DatetimeIndex(skipped), timings
 
 
@@ -423,11 +411,13 @@ def plot_probability_maps(probabilities, config, out, probability_threshold):
     tag = f"p{round(probability_threshold * 100):02d}"
     for start in pd.to_datetime(probabilities["time"].values):
         selected = probabilities.sel(time=start).transpose("step", "latitude", "longitude")
-        fig, axes = plt.subplots(
-            1, len(days), figsize=(3.3 * len(days), 4.5),
-            sharey=True, constrained_layout=True,
-        )
-        axes = np.atleast_1d(axes)
+        columns = min(5, len(days))
+        rows = (len(days) + columns - 1) // columns
+        fig, axes = plt.subplots(rows, columns, figsize=(3.3 * columns, 3.8 * rows),
+                                 sharey=True, constrained_layout=True, squeeze=False)
+        axes = axes.ravel()
+        for unused in axes[len(days):]:
+            unused.set_visible(False)
         mesh = None
         for ax, day in zip(axes, days):
             field = selected.sel(forecast_day=day)
@@ -493,13 +483,14 @@ def run(
     config,
     out,
     start_dates=None,
-    n_starts=DEFAULT_N_STARTS,
-    seed=DEFAULT_SEED,
-    days=DEFAULT_DAYS,
-    probability_threshold=DEFAULT_PROBABILITY,
+    days=None,
+    probability_threshold=None,
 ):
     """Read the selected starts, build probabilities and write Part D maps."""
     out = Path(out)
+    settings = forecast_settings(config)
+    days = settings["risk_forecast_days"] if days is None else days
+    probability_threshold = settings["probability_threshold"] if probability_threshold is None else probability_threshold
     days = tuple(sorted(int(day) for day in days))
     if not 0 < probability_threshold < 1:
         raise ValueError("probability threshold must be strictly between 0 and 1")
@@ -509,9 +500,9 @@ def run(
         starts = (
             pd.DatetimeIndex(start_dates)
             if start_dates is not None
-            else choose_random_starts(times, n_starts=n_starts, seed=seed)
+            else pd.DatetimeIndex(settings["risk_start_dates"])
         )
-        starts = pd.DatetimeIndex(pd.to_datetime(starts)).sort_values()
+        starts = validate_starts(starts, config)
         if len(starts) < 3 or len(starts) > 4:
             raise ValueError("select 3 or 4 forecast starts")
         if not set(starts).issubset(set(times)):
@@ -555,7 +546,12 @@ def run(
     frequency_path = plot_frequency_map(
         frequency, config, out, probability_threshold, n_cases
     )
+    manifest_path = write_manifest(out, config, forecast_snapshot, observed_snapshot,
+                                   starts, kept, skipped, [probabilities], {"forecast_days": list(days),
+                                   "probability_threshold": probability_threshold,
+                                   "frequency_denominator": "available selected initialization/forecast-day pairs"})
     return {
+        "manifest_path": manifest_path,
         "forecast_snapshot": forecast_snapshot,
         "observed_snapshot": observed_snapshot,
         "units": units,
@@ -581,15 +577,10 @@ def main(argv=None):
     parser.add_argument("--config", "--grid", dest="config", type=Path,
                         help="JSON settings override or grid.json export; defaults to scripts/common.py")
     parser.add_argument("--start-dates", nargs="+",
-                        help="explicit 3-4 ISO start dates; default is stratified random selection")
-    parser.add_argument("--n-starts", type=int, default=DEFAULT_N_STARTS, choices=(3, 4),
-                        help="number of stratified random starts (default: 4)")
-    parser.add_argument("--seed", type=int, default=DEFAULT_SEED,
-                        help=f"random seed for the default selection (default: {DEFAULT_SEED})")
-    parser.add_argument("--days", default=",".join(str(day) for day in DEFAULT_DAYS),
-                        help="comma-separated whole-day leads to map (default: 1,2,3,4,5)")
-    parser.add_argument("--probability", type=float, default=DEFAULT_PROBABILITY,
-                        help="probability threshold as a fraction (default: 0.20)")
+                        help="explicit 3-4 ISO start dates; default: common.py risk_start_dates")
+    parser.add_argument("--days", help="comma-separated whole-day leads; default: common.py risk_forecast_days")
+    parser.add_argument("--probability", type=float,
+                        help="probability fraction; default: common.py probability_threshold")
     parser.add_argument("--out", type=Path, default=OUTPUT_DIRECTORY,
                         help=f"output directory (default: {OUTPUT_DIRECTORY})")
     args = parser.parse_args(argv)
@@ -597,15 +588,14 @@ def main(argv=None):
         config = load_config(args.config)
         validate_common(config)
         starts = parse_start_dates(args.start_dates)
-        days = parse_days(args.days)
+        days = parse_days(args.days) if args.days is not None else None
     except (ConfigError, ValueError) as exc:
         parser.error(str(exc))
 
     try:
         started = time.time()
         result = run(
-            config, args.out, start_dates=starts, n_starts=args.n_starts,
-            seed=args.seed, days=days, probability_threshold=args.probability,
+            config, args.out, start_dates=starts, days=days, probability_threshold=args.probability,
         )
     except (ConfigError, ValueError, OSError) as exc:
         parser.error(str(exc))

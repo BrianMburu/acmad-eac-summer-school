@@ -31,6 +31,7 @@ import xarray as xr
 
 from scripts.common import (
     ROOT,
+    forecast_settings,
     ConfigError,
     box_inside,
     inside,
@@ -39,15 +40,14 @@ from scripts.common import (
     validate_common,
 )
 from scripts.data_access import domain, open_store, town_indexers
+from scripts.forecast_rainfall import (daily_step_indices as validated_daily_indices, daily_totals,
+                                       forecast_unit_report, validate_ensemble, validate_starts,
+                                       warn_source_size, write_manifest)
 from scripts.validation import check_town_coverage, units_report
 
-DEFAULT_WINDOW_START = "2025-07-01"
-DEFAULT_WINDOW_END = "2025-07-21"
 DURATION = "24hr"
 RETURN_PERIOD = 2
 OUTPUT_DIRECTORY = ROOT / "out" / "forecast_leadtime"
-TP_TO_MM = 1000.0
-READ_WORKERS = 8
 STRICT_OPERATOR = ">"
 
 
@@ -107,11 +107,7 @@ def daily_step_indices(forecast):
     """Return cumulative and daily whole-day step indices, without reading data."""
     if "step" not in forecast.coords:
         raise ValueError("forecast store has no step coordinate")
-    lead_h = (pd.to_timedelta(forecast["step"].values) / pd.Timedelta("1h")).astype(int)
-    day_indices = [i for i, hours in enumerate(lead_h) if hours % 24 == 0]
-    if not day_indices or day_indices[0] != 0 or len(day_indices) < 3:
-        raise ValueError("forecast store needs a 0-hour step and at least two whole-day steps")
-    return lead_h, day_indices
+    return validated_daily_indices(forecast.step.values)
 
 
 def read_two_year(observed, config):
@@ -163,71 +159,31 @@ def read_window_daily_totals(forecast, config, starts):
     reported, matching the project brief's warning about unwritten forecast starts.
     """
     variable = config["forecast"]["variable"]
-    if variable not in forecast:
-        raise ValueError(f"missing forecast variable: {variable}")
-    starts = pd.DatetimeIndex(starts)
+    validate_ensemble(forecast[variable])
+    forecast_unit_report(forecast[variable], config)
+    starts = validate_starts(starts, config)
     time_indices = forecast_start_indices(forecast, starts)
-    lead_h, day_indices = daily_step_indices(forecast)
-    indexers = town_indexers(config, "latitude", "longitude")
-
-    cumulative = (
-        forecast[variable]
-        .isel(time=time_indices, step=day_indices)
-        .sel(**indexers, method="nearest")
-        .transpose("time", "step", "number", "town")
-        * TP_TO_MM
-    )
-    import dask
-
-    cumulative, = dask.compute(
-        cumulative, scheduler="threads", num_workers=READ_WORKERS
-    )
-
-    values = cumulative.values
-    per_start_all_finite = np.isfinite(values).all(axis=(1, 2, 3))
-    per_start_any_finite = np.isfinite(values).any(axis=(1, 2, 3))
-    partial = per_start_any_finite & ~per_start_all_finite
-    if partial.any():
-        bad = [str(s.date()) for s in starts[partial]]
-        raise ValueError("forecast starts contain partial missing data: " + ", ".join(bad))
-    if not per_start_all_finite.any():
+    _, indices = daily_step_indices(forecast)
+    warn_source_size(forecast[variable], starts, indices)
+    arrays, kept, skipped = [], [], []
+    # Compute one start at a time so the 42-start default does not materialise
+    # all source map chunks concurrently. Paired point selection happens first.
+    for start, index in zip(starts, time_indices):
+        selected = (forecast[variable].isel(time=int(index), step=indices)
+                    .sel(**town_indexers(config, "latitude", "longitude"), method="nearest"))
+        daily = daily_totals(selected.compute(num_workers=config["execution"]["workers"]), config)
+        if daily is None:
+            skipped.append(start)
+            continue
+        arrays.append(daily.expand_dims(time=[start]))
+        kept.append(start)
+    if not arrays:
         raise ValueError("all selected forecast starts are missing (all NaN)")
-
-    skipped = starts[~per_start_all_finite]
-    if len(skipped):
-        cumulative = cumulative.isel(time=np.flatnonzero(per_start_all_finite))
-        starts = starts[per_start_all_finite]
-
-    if (cumulative.values < -1e-6).any():
-        raise ValueError("forecast cumulative totals contain negative values")
-
-    daily = cumulative.diff("step", label="upper").transpose(
-        "time", "number", "step", "town"
-    )
-    if not np.isfinite(daily.values).all():
-        raise ValueError("forecast daily totals contain missing or nonfinite values")
-    # Float32 cumulative storage can create a few hundredths of a millimetre of
-    # apparent decrease.  Reject substantive decreases, clip tiny artefacts.
-    if float(daily.min()) < -0.1:
-        raise ValueError("forecast daily totals decrease; cumulative tp is not monotonic")
-    if float(daily.min()) < 0:
-        daily = daily.clip(min=0.0)
-
-    days = (lead_h[day_indices][1:] // 24).astype(int)
-    if (days <= 0).any():
-        raise ValueError("forecast daily lead times must be positive whole days")
-    valid_values = np.asarray([
-        [start + pd.Timedelta(hours=int(hours)) for hours in lead_h[day_indices][1:]]
-        for start in starts
-    ], dtype="datetime64[ns]")
-    daily = daily.assign_coords(
-        forecast_day=("step", days),
-        valid_time=(("time", "step"), valid_values),
-    )
-    daily.name = "daily_precipitation"
-    daily.attrs["units"] = "mm/day"
+    daily = xr.concat(arrays, dim="time", coords="different", compat="equals").transpose("time", "number", "step", "town")
     daily.attrs["exceedance_operator"] = STRICT_OPERATOR
-    return daily, starts, skipped
+    # Preserve conversion diagnostics for every start in the run manifest.
+    daily.attrs["per_start_validation"] = [dict(array.attrs) for array in arrays]
+    return daily, pd.DatetimeIndex(kept), pd.DatetimeIndex(skipped)
 
 
 def count_members(daily, thresholds):
@@ -276,75 +232,54 @@ def most_alarming_start(counts):
 
 
 def summarize_signals(counts, daily, thresholds, config):
-    """Per-town earliest and consistency metrics for the selected window."""
-    times = pd.to_datetime(counts["time"].values)
-    days = counts["forecast_day"].values.astype(int)
-    valid = np.asarray(daily["valid_time"].values, dtype="datetime64[ns]")
+    """One row per town/valid day/criterion, across forecasts of that same day.
+
+    Lead is measured from the first signaling initialization to that valid end.
+    Consistency divides signaling starts by available starts reaching that day.
+    A gap in initialization dates breaks a consecutive run.
+    """
+    import math
+
+    times = pd.DatetimeIndex(counts.time.values)
+    days = counts.forecast_day.values.astype(int)
+    valid = np.asarray(daily.valid_time.values, dtype="datetime64[ns]")
+    n_members = counts.attrs["ensemble_size"]
+    cutoff = forecast_settings(config)["probability_threshold"]
+    criteria = [("any_member", 1), ("probability_threshold", math.ceil(cutoff * n_members))]
     rows = []
     for town in config["towns"]:
         name = town["name"]
-        town_counts = counts.sel(town=name).transpose("time", "step")
-        values = town_counts.values.astype(int)
-        signal = values > 0
-        if signal.any():
-            first_start_i = int(np.flatnonzero(signal.any(axis=1))[0])
-            first_start = times[first_start_i]
-            first_start_lead = int(days[np.flatnonzero(signal[first_start_i])[0]])
-            earliest_lead = int(np.min(days[signal.any(axis=0)]))
-            earliest_valid = pd.Timestamp(valid[signal].min())
-            starts_with_signal = int(signal.any(axis=1).sum())
-            total_member_days = int(values.sum())
-            peak_members = int(values.max())
-            peak_time_i, peak_day_i = np.unravel_index(values.argmax(), values.shape)
-            peak_start = times[peak_time_i]
-            peak_day = int(days[peak_day_i])
-            run = longest = 0
-            for has_signal in signal.any(axis=1):
-                if has_signal:
-                    run += 1
-                    longest = max(longest, run)
-                else:
-                    run = 0
-        else:
-            first_start = None
-            first_start_lead = None
-            earliest_lead = None
-            earliest_valid = None
-            starts_with_signal = 0
-            total_member_days = 0
-            peak_members = 0
-            peak_start = None
-            peak_day = None
-            longest = 0
-
-        rows.append({
-            "town": name,
-            "threshold_mm": float(thresholds.sel(town=name)),
-            "window_start": times[0].strftime("%Y-%m-%d"),
-            "window_end": times[-1].strftime("%Y-%m-%d"),
-            "window_starts": len(times),
-            "earliest_signal_start": (
-                first_start.strftime("%Y-%m-%d") if first_start is not None else ""
-            ),
-            "earliest_signal_start_lead_day": (
-                first_start_lead if first_start_lead is not None else ""
-            ),
-            "earliest_signal_lead_day": (
-                earliest_lead if earliest_lead is not None else ""
-            ),
-            "earliest_signal_valid_date": (
-                earliest_valid.strftime("%Y-%m-%d") if earliest_valid is not None else ""
-            ),
-            "starts_with_signal": starts_with_signal,
-            "fraction_starts_with_signal": (
-                starts_with_signal / len(times) if len(times) else 0.0
-            ),
-            "total_member_days_above": total_member_days,
-            "max_members_above_in_day": peak_members,
-            "peak_start": peak_start.strftime("%Y-%m-%d") if peak_start is not None else "",
-            "peak_lead_day": peak_day if peak_day is not None else "",
-            "longest_consecutive_start_run": longest,
-        })
+        values = counts.sel(town=name).transpose("time", "step").values.astype(int)
+        for valid_end in np.unique(valid):
+            start_i, lead_i = np.where(valid == valid_end)
+            order = np.argsort(times[start_i])
+            start_i, lead_i = start_i[order], lead_i[order]
+            event_starts = times[start_i]
+            event_counts = values[start_i, lead_i]
+            for criterion, minimum in criteria:
+                signal = event_counts >= minimum
+                first = int(np.flatnonzero(signal)[0]) if signal.any() else None
+                run = longest = 0
+                previous = None
+                for start, has_signal in zip(event_starts, signal):
+                    if has_signal:
+                        run = run + 1 if previous is not None and start - previous == pd.Timedelta(days=1) else 1
+                        longest = max(longest, run)
+                        previous = start
+                    else:
+                        run, previous = 0, None
+                rows.append({
+                    "town": name, "threshold_mm": float(thresholds.sel(town=name)),
+                    "valid_date": str(pd.Timestamp(valid_end).date()),
+                    "criterion": criterion, "minimum_members": minimum,
+                    "available_starts": len(event_starts), "signaling_starts": int(signal.sum()),
+                    "fraction_starts_with_signal": float(signal.mean()),
+                    "earliest_signal_start": str(event_starts[first].date()) if first is not None else "",
+                    "earliest_signal_lead_day": int(days[lead_i[first]]) if first is not None else "",
+                    "longest_consecutive_start_run": longest,
+                    "max_members_above_in_day": int(event_counts.max()),
+                    "total_member_days_above": int(event_counts.sum()),
+                })
     return pd.DataFrame(rows)
 
 
@@ -491,9 +426,15 @@ def write_counts(counts, out):
     return path
 
 
-def run(config, out, window_start=DEFAULT_WINDOW_START, window_end=DEFAULT_WINDOW_END):
+def run(config, out, window_start=None, window_end=None):
     """Read both stores, count exceedances, and write all Part C outputs."""
-    starts = window_starts(window_start, window_end)
+    if (window_start is None) != (window_end is None):
+        raise ValueError("provide both window start and window end")
+    windows = ([{"start": window_start, "end": window_end}] if window_start is not None
+               else forecast_settings(config)["lead_time_windows"])
+    starts = pd.DatetimeIndex([day for window in windows
+                               for day in window_starts(window["start"], window["end"])])
+    validate_starts(starts, config)
     out = Path(out)
     forecast, forecast_snapshot = open_store(config["forecast"])
     try:
@@ -520,6 +461,9 @@ def run(config, out, window_start=DEFAULT_WINDOW_START, window_end=DEFAULT_WINDO
         for town in config["towns"]
     ]
     plume_path = plot_plume(daily, counts, thresholds, best, out)
+    manifest_path = write_manifest(out, config, forecast_snapshot, observed_snapshot,
+                                   starts, kept_starts, skipped, [daily], {"windows": windows,
+                                   "probability_threshold": forecast_settings(config)["probability_threshold"]})
     return {
         "forecast_snapshot": forecast_snapshot,
         "observed_snapshot": observed_snapshot,
@@ -538,6 +482,7 @@ def run(config, out, window_start=DEFAULT_WINDOW_START, window_end=DEFAULT_WINDO
         "counts_path": counts_path,
         "heatmap_paths": heatmap_paths,
         "plume_path": plume_path,
+        "manifest_path": manifest_path,
     }
 
 
@@ -545,10 +490,8 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", "--grid", dest="config", type=Path,
                         help="JSON settings override or grid.json export; defaults to scripts/common.py")
-    parser.add_argument("--window-start", default=DEFAULT_WINDOW_START,
-                        help=f"first forecast start date (default: {DEFAULT_WINDOW_START})")
-    parser.add_argument("--window-end", default=DEFAULT_WINDOW_END,
-                        help=f"last forecast start date (default: {DEFAULT_WINDOW_END})")
+    parser.add_argument("--window-start", help="first start of a single-window override")
+    parser.add_argument("--window-end", help="last start of a single-window override; default: common.py windows")
     parser.add_argument("--out", type=Path, default=OUTPUT_DIRECTORY,
                         help=f"output directory (default: {OUTPUT_DIRECTORY})")
     args = parser.parse_args(argv)
@@ -580,10 +523,9 @@ def main(argv=None):
               ", ".join(str(s.date()) for s in result["skipped_starts"]))
     print(f"CMORPH {DURATION} units: {result['units']['effective_units']}")
     print(result["summary"][[
-        "town", "threshold_mm", "earliest_signal_start",
-        "earliest_signal_lead_day", "earliest_signal_valid_date",
-        "starts_with_signal", "window_starts", "total_member_days_above",
-        "max_members_above_in_day", "peak_start",
+        "town", "valid_date", "criterion", "earliest_signal_start",
+        "earliest_signal_lead_day", "signaling_starts", "available_starts",
+        "max_members_above_in_day",
     ]].to_string(index=False))
     print(f"most alarming start: {result['best']['town']} "
           f"{result['best']['start']:%Y-%m-%d} "

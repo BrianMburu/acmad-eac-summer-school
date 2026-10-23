@@ -39,8 +39,8 @@ def synthetic_stores():
     ])
     # Include every three hours so the whole-day selection is exercised.
     steps = pd.to_timedelta(np.arange(21) * 6, unit="h")
-    n_starts, n_days, n_members = len(times), 5, 3
-    members = np.array([10.0, 20.0, 30.0])
+    n_starts, n_days, n_members = len(times), 5, 51
+    members = np.tile([10.0, 20.0, 30.0], 17)
     daily_mm = np.broadcast_to(
         members[None, None, :, None, None],
         (n_starts, n_days, n_members, len(fc_lat), len(fc_lon)),
@@ -246,3 +246,44 @@ def test_run_with_synthetic_stores(synthetic_stores, tmp_path, monkeypatch):
     hotspots = pd.read_csv(result["hotspot_path"])
     assert not hotspots.empty
     assert {"latitude", "longitude", "frequency"}.issubset(hotspots.columns)
+
+
+def test_explicit_mm_metadata_prevents_thousandfold_risk_inflation(synthetic_stores):
+    config, observed, forecast, times = synthetic_stores
+    forecast.tp.attrs['units'] = 'mm'
+    region = risk.select_region(forecast, config, 'latitude', 'longitude', ascending=False)
+    threshold, _ = risk.read_threshold_map(observed, region, config)
+    probability, _ = risk.read_probability_for_start(region, config, times[0], threshold, (1, 2))
+    assert float(probability.max()) == 0
+    assert probability.attrs['mm_factor'] == 1
+    assert not probability.attrs['used_workshop_fallback']
+
+
+def test_region_risk_rejects_material_cumulative_decreases(synthetic_stores):
+    config, _, forecast, times = synthetic_stores
+    forecast.tp.loc[{'step': forecast.step.values[8]}] = 0.001
+    region = risk.select_region(forecast, config, 'latitude', 'longitude', ascending=False)
+    threshold = xr.full_like(region.tp.isel(time=0, step=0, number=0), 25.)
+    with pytest.raises(ValueError, match='decreases'):
+        risk.read_probability_for_start(region, config, times[0], threshold, (1, 2))
+
+
+def test_default_run_uses_shared_risk_dates_and_all_ten_days(synthetic_stores, tmp_path, monkeypatch):
+    config, observed, forecast, _ = synthetic_stores
+    starts = pd.to_datetime(config['forecast_analysis']['risk_start_dates'])
+    # Daily endpoints suffice; there is no need to interpolate subdaily data.
+    values = np.broadcast_to(np.arange(11)[None, :, None, None, None] * 0.03,
+                             (4, 11, 51, forecast.sizes['latitude'], forecast.sizes['longitude'])).copy()
+    forecast = xr.Dataset({'tp': (('time', 'step', 'number', 'latitude', 'longitude'), values)},
+                          coords={'time': starts, 'step': pd.to_timedelta(np.arange(11), unit='D'),
+                                  'number': np.arange(51), 'latitude': forecast.latitude,
+                                  'longitude': forecast.longitude})
+    monkeypatch.setattr(risk, 'open_store', lambda settings:
+                        (observed, 'synthetic-cmorph') if settings['prefix'] == config['cmorph_reference']['prefix']
+                        else (forecast, 'synthetic-forecast'))
+    monkeypatch.setattr(risk, 'plot_probability_maps', lambda *args: [])
+    monkeypatch.setattr(risk, 'plot_frequency_map', lambda *args: tmp_path / 'frequency.png')
+    result = risk.run(config, tmp_path)
+    assert result['starts'].equals(starts)
+    assert result['n_cases'] == 40
+    assert result['days'] == tuple(range(1, 11))

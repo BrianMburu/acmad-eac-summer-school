@@ -5,3 +5,7 @@ __pycache__/
 dist/
 *.egg-info/
 
+
+# Raw forecast reads and local replay intermediates are not deliverables.
+**/cache/
+*.log

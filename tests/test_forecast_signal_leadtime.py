@@ -36,7 +36,7 @@ def synthetic_stores():
     fc_lon = np.arange(23.0, 38.01, 1.0)
     times = pd.to_datetime(["2025-07-01", "2025-07-02", "2025-07-03"])
     steps = pd.to_timedelta(np.arange(11) * 24, unit="h")
-    n_starts, n_steps, n_members = len(times), len(steps), 3
+    n_starts, n_steps, n_members = len(times), len(steps), 51
     start = np.arange(n_starts)[:, None, None, None, None]
     day = np.arange(n_steps - 1)[None, :, None, None, None]
     member = np.arange(n_members)[None, None, :, None, None]
@@ -139,7 +139,7 @@ def test_reads_only_whole_day_leads_and_differences_cumulative(synthetic_stores)
     assert kept.tolist() == starts.tolist()
     assert len(skipped) == 0
     assert daily.dims == ("time", "number", "step", "town")
-    assert daily.sizes == {"time": 3, "number": 3, "step": 10, "town": 5}
+    assert daily.sizes == {"time": 3, "number": 51, "step": 10, "town": 5}
     assert daily["forecast_day"].values.tolist() == list(range(1, 11))
     assert str(daily["valid_time"].values[0, 0])[:10] == "2025-07-02"
     for town in config["towns"]:
@@ -180,16 +180,15 @@ def test_counts_are_strict_and_summary_is_consistent(direct_daily):
     assert int(counts.sel(town=names[0], time=pd.Timestamp("2025-07-01")).sum()) == 3
     assert counts.sizes == {"time": 2, "step": 3, "town": 5}
     summary = leadtime.summarize_signals(counts, daily, thresholds, config)
-    row = summary[summary.town == names[0]].iloc[0]
+    row = summary[(summary.town == names[0]) & (summary.valid_date == "2025-07-03")
+                  & (summary.criterion == "any_member")].iloc[0]
     assert row.earliest_signal_start == "2025-07-01"
-    assert row.earliest_signal_start_lead_day == 1
-    assert row.earliest_signal_lead_day == 1
-    assert row.earliest_signal_valid_date == "2025-07-02"
-    assert row.starts_with_signal == 2
+    assert row.earliest_signal_lead_day == 2
+    assert row.signaling_starts == 2
+    assert row.available_starts == 2
     assert row.fraction_starts_with_signal == 1.0
-    assert row.total_member_days_above == 10
+    assert row.total_member_days_above == 5
     assert row.max_members_above_in_day == 3
-    assert row.peak_start == "2025-07-02"
     assert row.longest_consecutive_start_run == 2
 
 
@@ -232,7 +231,8 @@ def test_run_with_synthetic_stores(synthetic_stores, tmp_path, monkeypatch):
     assert result["forecast_snapshot"] == "synthetic-forecast"
     assert result["observed_snapshot"] == "synthetic-cmorph"
     assert len(result["starts"]) == 3
-    assert len(result["summary"]) == len(names)
+    assert set(result["summary"].town) == set(names)
+    assert set(result["summary"].criterion) == {"any_member", "probability_threshold"}
     assert result["summary_path"].exists()
     assert result["counts_path"].exists()
     assert len(result["heatmap_paths"]) == len(names)
@@ -240,8 +240,9 @@ def test_run_with_synthetic_stores(synthetic_stores, tmp_path, monkeypatch):
     assert len(list(tmp_path.glob("*.png"))) == len(names) + 1
     assert len(list(tmp_path.glob("*.csv"))) == 2
     saved = pd.read_csv(result["summary_path"])
-    assert len(saved) == len(names)
-    assert (saved.window_starts == 3).all()
+    assert set(saved.town) == set(names)
+    assert len(saved) == len(names) * 12 * 2
+    assert saved.available_starts.between(1, 3).all()
     long_counts = pd.read_csv(result["counts_path"])
     assert len(long_counts) == 3 * 10 * len(names)
     assert long_counts.columns.tolist() == [
@@ -274,3 +275,61 @@ def test_partial_missing_data_is_rejected(synthetic_stores):
             forecast, config,
             leadtime.window_starts("2025-07-01", "2025-07-03"),
         )
+
+
+def test_signals_for_different_valid_days_do_not_imply_event_consistency(direct_daily):
+    config, names, daily, thresholds, counts = direct_daily
+    counts = counts.copy(deep=True)
+    counts[:] = 0
+    counts[0, 0, :] = 1  # July 2, only the July 1 start can reach this day.
+    counts[1, 0, :] = 1  # July 3: the July 1 start did not warn for this day.
+    summary = leadtime.summarize_signals(counts, daily, thresholds, config)
+    row = summary[(summary.town == names[0]) & (summary.valid_date == '2025-07-03')
+                  & (summary.criterion == 'any_member')].iloc[0]
+    assert row.available_starts == 2
+    assert row.signaling_starts == 1
+    assert row.fraction_starts_with_signal == 0.5
+    assert row.earliest_signal_start == '2025-07-02'
+    assert row.earliest_signal_lead_day == 1
+
+
+def test_calendar_gap_breaks_consistency_and_probability_requires_eleven_members(direct_daily):
+    config, names, daily, thresholds, counts = direct_daily
+    starts = pd.to_datetime(['2025-07-01', '2025-07-03'])
+    # Both starts reach July 4: day 3 for July 1, day 1 for July 3.
+    counts = counts.assign_coords(time=starts)
+    counts.attrs['ensemble_size'] = 51
+    counts[:] = 0
+    counts[0, 2, :] = 11
+    counts[1, 0, :] = 10
+    valid = np.array([[start + pd.Timedelta(days=int(day)) for day in [1, 2, 3]]
+                      for start in starts], dtype='datetime64[ns]')
+    daily = daily.assign_coords(time=starts, valid_time=(('time', 'step'), valid))
+    summary = leadtime.summarize_signals(counts, daily, thresholds, config)
+    event = summary[(summary.town == names[0]) & (summary.valid_date == '2025-07-04')]
+    any_member = event[event.criterion == 'any_member'].iloc[0]
+    warning = event[event.criterion == 'probability_threshold'].iloc[0]
+    assert any_member.signaling_starts == 2
+    assert any_member.longest_consecutive_start_run == 1
+    assert warning.minimum_members == 11
+    assert warning.signaling_starts == 1
+    assert warning.earliest_signal_start == '2025-07-01'
+    assert warning.earliest_signal_lead_day == 3
+
+
+def test_explicit_mm_depths_and_default_three_windows(synthetic_stores, tmp_path, monkeypatch):
+    config, observed, forecast, names = synthetic_stores
+    starts = pd.DatetimeIndex([d for w in config['forecast_analysis']['lead_time_windows']
+                               for d in pd.date_range(w['start'], w['end'])])
+    forecast = xr.concat([forecast.isel(time=[0]).assign_coords(time=[start]) for start in starts], dim='time')
+    forecast.tp.attrs['units'] = 'mm'
+    monkeypatch.setattr(leadtime, 'open_store', lambda settings:
+                        (observed, 'synthetic-cmorph') if settings['prefix'] == config['cmorph_reference']['prefix']
+                        else (forecast, 'synthetic-forecast'))
+    monkeypatch.setattr(leadtime, 'plot_heatmap', lambda *args, **kwargs: tmp_path / 'heatmap.png')
+    monkeypatch.setattr(leadtime, 'plot_plume', lambda *args: tmp_path / 'plume.png')
+    result = leadtime.run(config, tmp_path)
+    assert result['starts'].equals(starts)
+    assert result['counts'].sizes == {'time': 42, 'step': 10, 'town': len(names)}
+    assert float(result['daily'].max()) < 1
+    assert int(result['counts'].max()) == 0

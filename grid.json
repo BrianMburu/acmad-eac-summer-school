@@ -80,7 +80,11 @@
     "latitude_order": "descending",
     "available_start_date": "2025-06-01",
     "available_end_date": "2025-08-31",
-    "start_dates": null
+    "start_dates": [
+      "2025-06-16",
+      "2025-07-16",
+      "2025-08-16"
+    ]
   },
   "cmorph_reference": {
     "endpoint": "https://data.source.coop",
@@ -114,6 +118,44 @@
     "return_period_years": 2,
     "exceedance_operator": ">",
     "matching": "nearest"
+  },
+  "forecast_analysis": {
+    "units_if_missing": "m",
+    "trace_rainfall_mm": 0.08,
+    "fixed_threshold_mm": 20.0,
+    "lead_time_windows": [
+      {
+        "start": "2025-06-09",
+        "end": "2025-06-22"
+      },
+      {
+        "start": "2025-07-09",
+        "end": "2025-07-22"
+      },
+      {
+        "start": "2025-08-09",
+        "end": "2025-08-22"
+      }
+    ],
+    "risk_start_dates": [
+      "2025-06-16",
+      "2025-07-16",
+      "2025-08-13",
+      "2025-08-16"
+    ],
+    "risk_forecast_days": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "probability_threshold": 0.2
   },
   "execution": {
     "workers": 2,
