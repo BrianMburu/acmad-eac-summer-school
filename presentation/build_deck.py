@@ -2325,7 +2325,7 @@ def slide_repo(prs):
         ("4", "analyses"),
         ("5", "towns"),
         ("27", "years observed"),
-        ("96", "tests passing"),
+        ("103", "tests passing"),
     ]
     for i, (value, label) in enumerate(stats):
         col = i % 2
