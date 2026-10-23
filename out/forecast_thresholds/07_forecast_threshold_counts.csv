@@ -1,0 +1,16 @@
+forecast_init,town,threshold,threshold_label,threshold_mm,members_above_any_day,max_members_above_in_day,member_days_above,days_with_any_member,xclim_heavy_days_total,xclim_members_with_heavy_day,xclim_max_heavy_days_per_member
+2025-07-16,Khartoum,fixed_20mm,fixed 20 mm/day,20.0000,0,0,0,0,0,0,0
+2025-07-16,Khartoum,cmorph_2yr,CMORPH 2-year,23.8217,0,0,0,0,0,0,0
+2025-07-16,Khartoum,cmorph_10yr,CMORPH 10-year,51.6511,0,0,0,0,0,0,0
+2025-07-16,Kassala,fixed_20mm,fixed 20 mm/day,20.0000,5,2,5,3,5,5,1
+2025-07-16,Kassala,cmorph_2yr,CMORPH 2-year,37.9458,0,0,0,0,0,0,0
+2025-07-16,Kassala,cmorph_10yr,CMORPH 10-year,60.5629,0,0,0,0,0,0,0
+2025-07-16,Gedaref,fixed_20mm,fixed 20 mm/day,20.0000,22,7,24,9,24,22,2
+2025-07-16,Gedaref,cmorph_2yr,CMORPH 2-year,52.9830,0,0,0,0,0,0,0
+2025-07-16,Gedaref,cmorph_10yr,CMORPH 10-year,72.8409,0,0,0,0,0,0,0
+2025-07-16,El Obeid,fixed_20mm,fixed 20 mm/day,20.0000,7,3,9,5,9,7,3
+2025-07-16,El Obeid,cmorph_2yr,CMORPH 2-year,37.1845,1,1,1,1,1,1,1
+2025-07-16,El Obeid,cmorph_10yr,CMORPH 10-year,61.6811,0,0,0,0,0,0,0
+2025-07-16,Nyala,fixed_20mm,fixed 20 mm/day,20.0000,7,3,8,5,8,7,2
+2025-07-16,Nyala,cmorph_2yr,CMORPH 2-year,32.3167,2,2,2,1,2,2,1
+2025-07-16,Nyala,cmorph_10yr,CMORPH 10-year,50.1543,0,0,0,0,0,0,0

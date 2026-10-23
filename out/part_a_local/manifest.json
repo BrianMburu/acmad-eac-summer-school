@@ -1,0 +1,168 @@
+{
+  "created_utc": "2026-10-22T19:31:07.092469+00:00",
+  "config_sha256": "81f0690b5a22bec44b13953d25abd17542046f10ddaa34171525474770ea78df",
+  "extraction_sha256": "7ccf9a5eefc02079fb1ab7da89a0f77d613b446bb314b3c61c0e71dcebf5d366",
+  "store_snapshots": {
+    "cmorph": "309ZYV7EMDMNPD0EDZK0",
+    "forecast": "212QY6MDW3RZ7PWD7A2G"
+  },
+  "git_commit": "6b5dc18518c0d39fa5eed30d2ed678b5609f8f6b",
+  "git_status": "M CMORPH_RETURN_PERIODS.md\n M scripts/cmorph_return_periods.py\n M scripts/common.py\n M scripts/rainfall_thresholds.py\n M tests/test_common.py\n M tests/test_rainfall_thresholds.py\n?? scripts/return_levels.py\n?? scripts/validation.py\n?? tests/test_cmorph_return_periods.py\n?? tests/test_return_levels.py",
+  "python": "3.13.16",
+  "packages": {
+    "icechunk": "2.3.0",
+    "zarr": "3.4.1",
+    "xarray": "2026.9.0",
+    "dask": "2026.8.0",
+    "numpy": "2.5.4",
+    "pandas": "3.1.0",
+    "scipy": "1.18.1",
+    "matplotlib": "3.11.2"
+  },
+  "source_sha256": {
+    "scripts/__init__.py": "c0bde83a874510a8ec5e46892a1c6e1642ae65e05038ab4e483d8ed2f72c354f",
+    "scripts/cmorph_return_periods.py": "82dfb533eb7acf2e8cf1bfb071ee6c6b951064f7a737eb9864f3a85671f18226",
+    "scripts/common.py": "becbab6ed52c91ca015a6b555f4215719649a86c0427104c92ada69d54563033",
+    "scripts/data_access.py": "ea72741dc794222342ecce0713e1e201de90873d071bdb52ca1dfc62a0dbad25",
+    "scripts/rainfall_thresholds.py": "b815140bc65664f7d065bdd60c24419bb8e82b90547727120c3ab6858652b3df",
+    "scripts/return_levels.py": "1e9557d32622af59c85e4bf45161ed524ef80fb2e285e83d784786a2ef5fa454",
+    "scripts/validation.py": "39e18a9689931c27c23844a32cb775b76badc34d04947093e335cb0bf98ba07b"
+  },
+  "adapted_from": [
+    "workshop E4: CMORPH extraction and return-level plots",
+    "workshop E6: explicit domain checks before nearest selection"
+  ],
+  "interpretation": "Historical annual-maxima thresholds, not JJA-only thresholds or observed 2025 rainfall.",
+  "sensitivity_note": "Leave-largest-out uses the same MLE method for both refits. Stored fit method may differ. Tied maxima: remove earliest year only.",
+  "quality_checks": {
+    "town_values_finite": true,
+    "nonnegative": true,
+    "return_levels_nondecreasing": true,
+    "regional_missing_pixels": 0,
+    "regional_total_pixels": 11440
+  },
+  "inspection": {
+    "cmorph_domain": {
+      "west": 19.5351656265,
+      "east": 53.949070063499995,
+      "south": -14.481504311999998,
+      "north": 25.469981112000006
+    },
+    "forecast_domain": {
+      "west": 15.0,
+      "east": 80.0,
+      "south": -40.0,
+      "north": 40.0
+    },
+    "region_inside": {
+      "cmorph": true,
+      "forecast": true
+    },
+    "available_durations": [
+      "30min",
+      "1hr",
+      "3hr",
+      "6hr",
+      "12hr",
+      "24hr",
+      "48hr",
+      "72hr",
+      "7day"
+    ],
+    "available_return_periods": [
+      2,
+      5,
+      10,
+      20,
+      50,
+      100
+    ],
+    "years": [
+      1998,
+      1999,
+      2000,
+      2001,
+      2002,
+      2003,
+      2004,
+      2005,
+      2006,
+      2007,
+      2008,
+      2009,
+      2010,
+      2011,
+      2012,
+      2013,
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019,
+      2020,
+      2021,
+      2022,
+      2023,
+      2024
+    ],
+    "units": {
+      "return_period_precip": {
+        "source_units": "mm",
+        "effective_units": "mm",
+        "accepted_as_mm_depth": true,
+        "used_workshop_fallback": false
+      },
+      "annual_maxima": {
+        "source_units": "mm",
+        "effective_units": "mm",
+        "accepted_as_mm_depth": true,
+        "used_workshop_fallback": false
+      }
+    },
+    "cmorph_sizes": {
+      "duration": 9,
+      "year": 27,
+      "lat": 550,
+      "lon": 474,
+      "return_period": 6
+    },
+    "forecast_sizes": {
+      "time": 92,
+      "step": 65,
+      "number": 51,
+      "latitude": 321,
+      "longitude": 261
+    },
+    "cmorph_chunks": {
+      "return_period_precip": [
+        1,
+        6,
+        550,
+        474
+      ],
+      "annual_maxima": [
+        1,
+        1,
+        550,
+        474
+      ]
+    },
+    "forecast_data_read": false,
+    "problems": [],
+    "config_sha256": "81f0690b5a22bec44b13953d25abd17542046f10ddaa34171525474770ea78df",
+    "extraction_sha256": "7ccf9a5eefc02079fb1ab7da89a0f77d613b446bb314b3c61c0e71dcebf5d366",
+    "store_snapshots": {
+      "cmorph": "309ZYV7EMDMNPD0EDZK0",
+      "forecast": "212QY6MDW3RZ7PWD7A2G"
+    }
+  },
+  "output_sha256": {
+    "thresholds.csv": "03c013d93afec2a623b967c5da1b79fcb561a3450615b293a0dcfbc0c53ba00b",
+    "annual_maxima.csv": "01886e793ab0db5dd23f62539babcdae3122cc82f2b6b5c5b5ce4849a698592c",
+    "fit_departures.csv": "d7d55e1d3010d5234f785b4429c7b766ea62dc5c05a2bc4dddef69d8700cfb1e",
+    "sensitivity_50yr.csv": "2d64cc695c291d372a45b42817d4b83bde15e77b0842f01266abc080a6f75745",
+    "regional_10yr_24hr.npz": "a0e081eb5f242c146e12feeec4d032da7e15bbc02a3a959004870d79fd329c66",
+    "settings_used.json": "8071bcd5d4620ade8847c258132848cf8e2a051c52548588d78f3a28b616b6d8"
+  }
+}

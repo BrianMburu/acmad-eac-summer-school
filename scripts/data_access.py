@@ -33,11 +33,15 @@ def domain(ds, lat_name, lon_name, ascending):
             "south": float(ds[lat_name].min()), "north": float(ds[lat_name].max())}
 
 
-def town_indexers(config):
-    """A shared town dimension selects paired points, not a lat/lon cross product."""
+def town_indexers(config, lat_name="lat", lon_name="lon"):
+    """A shared town dimension selects paired points, not a lat/lon cross product.
+
+    CMORPH uses ``lat``/``lon``; the forecast store uses
+    ``latitude``/``longitude``.  Pass those names explicitly for forecasts.
+    """
     import xarray as xr
 
     names = [t["name"] for t in config["towns"]]
     return {axis: xr.DataArray([t[key] for t in config["towns"]],
                               dims="town", coords={"town": names})
-            for axis, key in [("lat", "latitude"), ("lon", "longitude")]}
+            for axis, key in [(lat_name, "latitude"), (lon_name, "longitude")]}

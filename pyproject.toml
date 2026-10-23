@@ -12,6 +12,7 @@ dependencies = [
     "pandas",
     "scipy",
     "matplotlib",
+    "xclim>=0.62.0",
 ]
 
 [dependency-groups]
