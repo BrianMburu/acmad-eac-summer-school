@@ -99,6 +99,9 @@ Plotting checks the configured snapshot, the extraction hash and result-file
 checksums, and refuses a run whose `run_status.json` is not `ok`. Extraction
 stages all result files and promotes them together, so a failed rerun cannot
 silently mix new tables with an old map or manifest.
+Metadata-only inspection records its status separately in `inspection_status.json`,
+preserving existing extraction status and cached results even if inspection fails.
+Plotting replaces its named figure outputs and preserves other files in the figures folder.
 
 The regional box includes neighbouring areas and is not a Sudan boundary mask.
 Town thresholds use the nearest CMORPH pixel to the town centre. Coverage in both
@@ -139,7 +142,8 @@ and the stored level. This separates removal sensitivity from estimator differen
 | `regional_10yr_24hr.npz` | Small regional map cache for offline plotting |
 | `figures/` | Five town figures and the regional 10-year, 24-hour map |
 | `manifest.json`, `settings_used.json` | Data snapshot IDs, source hashes, versions, checks, result checksums and settings |
-| `run_status.json` | `ok`, `failed` or `inspected`; plotting requires `ok` when present |
+| `run_status.json` | Extraction status: `running`, `ok` or `failed`; plotting requires `ok` when present |
+| `inspection_status.json` | Separate status for metadata-only inspection |
 
 For B/C, filter `thresholds.csv` to `duration == "24hr"`, then join by `town` and
 `return_period_years`. Use `threshold_mm` against forecast **mm in 24 hours**.
